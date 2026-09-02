@@ -7,6 +7,8 @@
 bin/
 accounts/Seeder
 accounts/migrate
+main
+accounts/main
 
 # Environment variables
 .env

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package accounts.v1;
+
+option go_package = "accounts/api/proto/v1;accountsv1";
+
+// PaginationRequest represents standard pagination parameters
+message PaginationRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string search = 3;
+}
+
+// PaginationMetadata represents metadata for paginated responses
+message PaginationMetadata {
+  int32 current_page = 1;
+  int32 page_size = 2;
+  int64 total_items = 3;
+  int32 total_pages = 4;
+}
+
+// CountryResponse represents country data attached to users/admins
+message CountryResponse {
+  string id = 1;
+  string name_ar = 2;
+  string name_en = 3;
+  string country_code = 4;
+}

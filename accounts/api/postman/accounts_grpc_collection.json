@@ -1,0 +1,438 @@
+{
+  "info": {
+    "_postman_id": "c8e1e750-48bf-49f3-a162-8178a9c2d1b0",
+    "name": "Accounts gRPC Service",
+    "description": "Postman collection for Accounts Microservice gRPC CRUD APIs (Users, Admins, Roles, and Permissions). Built using HMVC architectural patterns in Go with Token-based Authentication (Bearer token).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "grpc_host",
+      "value": "127.0.0.1",
+      "type": "string"
+    },
+    {
+      "key": "grpc_port",
+      "value": "50051",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "webhook-accounts-secret-token",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create User",
+          "request": {
+            "method": "accounts.v1.UserService/CreateUser",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"01012345678\",\n  \"password\": \"SecurePass123!\",\n  \"country_id\": \"b3c66299-192a-436f-bca8-2856f61fcf11\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "accounts.v1.UserService/GetUser",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"b3c66299-192a-436f-bca8-2856f61fcf11\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "accounts.v1.UserService/UpdateUser",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"b3c66299-192a-436f-bca8-2856f61fcf11\",\n  \"name\": \"Johnathan Doe\",\n  \"email\": \"johnathan.doe@example.com\",\n  \"phone\": \"01098765432\",\n  \"password\": \"NewSecurePass123!\",\n  \"country_id\": \"b3c66299-192a-436f-bca8-2856f61fcf11\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "accounts.v1.UserService/DeleteUser",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"b3c66299-192a-436f-bca8-2856f61fcf11\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "accounts.v1.UserService/ListUsers",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pagination\": {\n    \"page\": 1,\n    \"page_size\": 10,\n    \"search\": \"\"\n  }\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admins",
+      "item": [
+        {
+          "name": "Create Admin",
+          "request": {
+            "method": "accounts.v1.AdminService/CreateAdmin",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Super Admin\",\n  \"email\": \"admin@webhook.local\",\n  \"phone\": \"01000000001\",\n  \"password\": \"AdminSuperSecret!\",\n  \"country_id\": \"b3c66299-192a-436f-bca8-2856f61fcf11\",\n  \"role_ids\": [],\n  \"permission_ids\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Admin",
+          "request": {
+            "method": "accounts.v1.AdminService/GetAdmin",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"b3c66299-192a-436f-bca8-2856f61fcf11\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Admin",
+          "request": {
+            "method": "accounts.v1.AdminService/UpdateAdmin",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"b3c66299-192a-436f-bca8-2856f61fcf11\",\n  \"name\": \"Super Administrator\",\n  \"email\": \"admin_updated@webhook.local\",\n  \"phone\": \"01000000002\",\n  \"country_id\": \"b3c66299-192a-436f-bca8-2856f61fcf11\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Admin",
+          "request": {
+            "method": "accounts.v1.AdminService/DeleteAdmin",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"b3c66299-192a-436f-bca8-2856f61fcf11\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Admins",
+          "request": {
+            "method": "accounts.v1.AdminService/ListAdmins",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pagination\": {\n    \"page\": 1,\n    \"page_size\": 10,\n    \"search\": \"\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Assign Roles to Admin",
+          "request": {
+            "method": "accounts.v1.AdminService/AssignRolesToAdmin",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": \"b3c66299-192a-436f-bca8-2856f61fcf11\",\n  \"role_ids\": [\"c4d77300-293b-547f-cdb9-3967f72fcf22\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Assign Permissions to Admin",
+          "request": {
+            "method": "accounts.v1.AdminService/AssignPermissionsToAdmin",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": \"b3c66299-192a-436f-bca8-2856f61fcf11\",\n  \"permission_ids\": [\"d5e88411-304c-658f-dec0-4078f83fdf33\"]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "item": [
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "accounts.v1.RoleService/CreateRole",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Editor\",\n  \"permission_ids\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Role",
+          "request": {
+            "method": "accounts.v1.RoleService/GetRole",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"c4d77300-293b-547f-cdb9-3967f72fcf22\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "method": "accounts.v1.RoleService/UpdateRole",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"c4d77300-293b-547f-cdb9-3967f72fcf22\",\n  \"name\": \"Content Manager\",\n  \"permission_ids\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Role",
+          "request": {
+            "method": "accounts.v1.RoleService/DeleteRole",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"c4d77300-293b-547f-cdb9-3967f72fcf22\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "accounts.v1.RoleService/ListRoles",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pagination\": {\n    \"page\": 1,\n    \"page_size\": 10,\n    \"search\": \"\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Assign Permissions to Role",
+          "request": {
+            "method": "accounts.v1.RoleService/AssignPermissionsToRole",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role_id\": \"c4d77300-293b-547f-cdb9-3967f72fcf22\",\n  \"permission_ids\": [\"d5e88411-304c-658f-dec0-4078f83fdf33\"]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Permissions",
+      "item": [
+        {
+          "name": "Create Permission",
+          "request": {
+            "method": "accounts.v1.PermissionService/CreatePermission",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"users.manage\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Permission",
+          "request": {
+            "method": "accounts.v1.PermissionService/GetPermission",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"d5e88411-304c-658f-dec0-4078f83fdf33\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Permission",
+          "request": {
+            "method": "accounts.v1.PermissionService/UpdatePermission",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"d5e88411-304c-658f-dec0-4078f83fdf33\",\n  \"name\": \"users.full_access\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Permission",
+          "request": {
+            "method": "accounts.v1.PermissionService/DeletePermission",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"d5e88411-304c-658f-dec0-4078f83fdf33\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Permissions",
+          "request": {
+            "method": "accounts.v1.PermissionService/ListPermissions",
+            "url": "grpc://{{grpc_host}}:{{grpc_port}}",
+            "metadata": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pagination\": {\n    \"page\": 1,\n    \"page_size\": 10,\n    \"search\": \"\"\n  }\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
