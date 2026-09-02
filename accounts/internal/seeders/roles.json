@@ -1,0 +1,20 @@
+[
+  {
+    "id": "e7b042c1-2a6d-498b-bc11-19b048560942",
+    "name": "Super Admin",
+    "email": "admin@example.com",
+    "phone": "+14155552671",
+    "roles": [
+      {
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+        "name": "Super-Admin"
+      }
+    ],
+    "permissions": [
+      {
+        "id": "f9e8d7c6-b5a4-3210-fedc-ba0987654321",
+        "name": "manage-users"
+      }
+    ]
+  }
+]
