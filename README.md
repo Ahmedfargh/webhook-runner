@@ -132,12 +132,49 @@ go run loadtest.go -n 100000 -c 1000 -scenario mixed
 go run loadtest.go -url http://your-vps-ip:8080 -n 100000 -c 2000 -scenario mixed
 ```
 
-### Benchmark Results (Local Laptop Benchmark)
-- **Total Requests**: 100,000
-- **Throughput**: **~6,570 Requests / Second (RPS)**
-- **P50 Latency**: `125.8 ms`
-- **P99 Latency**: `514.3 ms`
-- **Failure Analysis**: Auto-exports failed requests and reason distributions to `loadtest_failures.txt` and `loadtest_report.json`.
+### 💻 Test Device & Benchmark Environment
+
+The benchmark below was conducted on the following development machine:
+
+| Component | Specification | Description / Status |
+| :--- | :--- | :--- |
+| **Operating System** | **Arch Linux (x86_64)** | Kernel `7.1.8-zen1-3-zen` (ZEN SMP PREEMPT_DYNAMIC) |
+| **Processor (CPU)** | **Intel(R) Core(TM) i7-8850H @ 2.60GHz** | **6 Cores / 12 Logical Threads** |
+| **System Memory (RAM)** | **16 GB Total** | ~4.1 GB Available / dynamically allocated buffer cache |
+| **Network Target** | `http://localhost:8080` | Local Docker Bridge Network & Loopback Socket |
+| **Test Scenario** | `mixed` | Read/Write mix: Auth Login, Plans Listing, User Profiles, Health |
+
+---
+
+### 📊 Benchmark Results (100,000 Requests @ 1,000 Concurrency)
+
+```text
+=======================================================
+           🏁 LOAD TEST BENCHMARK RESULTS             
+=======================================================
+ Total Requests:     100,000
+ Concurrency:        1,000 Parallel Goroutines
+ Total Duration:     15.22s
+ Throughput:         6,570.19 Requests / Second (RPS)
+ Server 500 Errors:  0 (0.00%)
+-------------------------------------------------------
+ ⚡ Latency Breakdown:
+   - Average:        145.29 ms
+   - Min:            1.20 ms
+   - P50 (Median):   125.81 ms
+   - P90:            260.15 ms
+   - P95:            325.93 ms
+   - P99:            514.36 ms
+   - Max:            3,371.18 ms
+-------------------------------------------------------
+ 📋 Failure Logging:
+   - Auto-exports failure breakdown to `loadtest_failures.txt`
+   - Generates JSON summary report in `loadtest_report.json`
+=======================================================
+```
+
+> **Note on High Concurrency & Production VPS Tuning:**  
+> When scaling beyond 5,000+ concurrent connections on cloud servers (such as **Hostinger KVM 4 VPS** with 4 vCPU / 16 GB RAM), optimize Linux socket buffers (`ulimit -n 65535`, `sysctl -w net.core.somaxconn=4096`) and ensure MySQL `max_connections >= 2000` with connection pool limits (`SetMaxOpenConns(200)`).
 
 ---
 
