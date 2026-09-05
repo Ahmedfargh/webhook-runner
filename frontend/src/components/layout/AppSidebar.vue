@@ -65,11 +65,6 @@
         <span v-if="!isCollapsed">{{ t('nav.apps') }}</span>
       </router-link>
 
-      <router-link to="/webhooks/logs" class="nav-item" active-class="nav-item-active">
-        <Activity :size="18" />
-        <span v-if="!isCollapsed">{{ t('nav.webhookLogs') }}</span>
-      </router-link>
-
       <!-- Billing and Plans Section -->
       <div v-if="!isCollapsed" class="nav-section-title">{{ t('nav.billingAndPlans') }}</div>
 

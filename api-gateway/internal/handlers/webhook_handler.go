@@ -44,8 +44,8 @@ func (h *WebhookHandler) TestReceiver(c *gin.Context) {
 }
 
 type SendWebhookInput struct {
-	AppID         string            `json:"app_id" binding:"required"`
-	EventName     string            `json:"event_name" binding:"required"`
+	AppID         string            `json:"app_id"`
+	EventName     string            `json:"event_name"`
 	Payload       interface{}       `json:"payload"`
 	CustomHeaders map[string]string `json:"custom_headers"`
 	TargetURL     string            `json:"target_url_override"`
@@ -53,8 +53,36 @@ type SendWebhookInput struct {
 
 func (h *WebhookHandler) SendWebhook(c *gin.Context) {
 	var input SendWebhookInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload: " + err.Error()})
+	_ = c.ShouldBindJSON(&input)
+
+	// Fallback to URL query parameters if not present in request body
+	if input.AppID == "" {
+		input.AppID = c.Query("app_id")
+		if input.AppID == "" {
+			input.AppID = c.Query("appId")
+		}
+	}
+	if input.EventName == "" {
+		input.EventName = c.Query("event_name")
+		if input.EventName == "" {
+			input.EventName = c.Query("event")
+		}
+	}
+	if input.TargetURL == "" {
+		input.TargetURL = c.Query("target_url_override")
+		if input.TargetURL == "" {
+			input.TargetURL = c.Query("target_url")
+			if input.TargetURL == "" {
+				input.TargetURL = c.Query("url")
+			}
+		}
+	}
+	if input.Payload == nil && c.Query("payload") != "" {
+		input.Payload = c.Query("payload")
+	}
+
+	if input.AppID == "" || input.EventName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "app_id and event_name are required (in JSON body or query parameters)"})
 		return
 	}
 

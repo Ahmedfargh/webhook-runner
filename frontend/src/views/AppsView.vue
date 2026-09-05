@@ -114,6 +114,9 @@
             </div>
           </div>
           <div class="action-buttons-group">
+            <button class="action-icon-btn text-info" :title="t('apps.webhookLogs')" @click="openLogsModal(app)">
+              <Activity :size="14" />
+            </button>
             <button class="action-icon-btn" :title="t('apps.testWebhook')" @click="openTestModal(app)">
               <Send :size="14" />
             </button>
@@ -183,6 +186,9 @@
         </div>
 
         <div class="app-card-footer">
+          <button class="btn btn-sm btn-outline" @click="openLogsModal(app)">
+            <Activity :size="13" /> {{ t('apps.webhookLogs') }}
+          </button>
           <button class="btn btn-sm btn-secondary" @click="rotateSecrets(app)">
             <Key :size="13" /> {{ t('apps.rotateSecrets') }}
           </button>
@@ -336,14 +342,186 @@
       </form>
 
       <template #footer>
-        <router-link to="/webhooks/logs" class="btn btn-outline btn-sm mr-auto" @click="closeTestModal">
-          <FileText :size="14" /> {{ t('apps.viewAllLogs') }}
-        </router-link>
+        <button type="button" class="btn btn-outline btn-sm mr-auto" @click="switchToLogsModal">
+          <Activity :size="14" /> {{ t('apps.webhookLogs') }}
+        </button>
         <button class="btn btn-secondary btn-sm" @click="closeTestModal">{{ t('common.close') }}</button>
         <button class="btn btn-primary btn-sm" @click="executeTestDispatch" :disabled="sending">
           <RefreshCw v-if="sending" :size="14" class="spin-anim" />
           <Send v-else :size="14" /> {{ t('apps.sendNow') }}
         </button>
+      </template>
+    </Modal>
+
+    <!-- App Webhook Logs Modal -->
+    <Modal
+      :isOpen="isLogsModalOpen"
+      :title="`${t('apps.appLogsModalTitle')} - ${activeLogsApp?.name || ''}`"
+      width="900px"
+      @close="closeLogsModal"
+    >
+      <div class="app-logs-container">
+        <!-- Top App Meta & Quick Actions Bar -->
+        <div class="logs-app-summary-bar">
+          <div class="app-summary-left">
+            <div class="meta-tag">
+              <span class="text-muted text-xs">App ID:</span>
+              <code class="text-xs" dir="ltr">{{ activeLogsApp?.app_id || activeLogsApp?.appId }}</code>
+            </div>
+            <div class="meta-tag" v-if="activeLogsApp?.webhook_url || activeLogsApp?.webhookUrl">
+              <Globe :size="13" class="text-muted" />
+              <span class="text-xs truncate max-w-xs" dir="ltr">{{ activeLogsApp?.webhook_url || activeLogsApp?.webhookUrl }}</span>
+            </div>
+          </div>
+          <div class="app-summary-actions">
+            <button class="btn btn-xs btn-secondary" @click="fetchAppLogs" :disabled="logsLoading">
+              <RefreshCw :size="12" :class="{ 'spin-anim': logsLoading }" /> {{ t('common.refresh') }}
+            </button>
+            <button class="btn btn-xs btn-primary" @click="openTestFromLogs">
+              <Send :size="12" /> {{ t('apps.testWebhook') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Metrics Overview Row -->
+        <div class="logs-stats-grid">
+          <div class="stat-mini-card">
+            <span class="stat-mini-label">{{ t('apps.statsTotalCalls') }}</span>
+            <span class="stat-mini-val">{{ appLogsStats.total }}</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-label">{{ t('apps.statsSuccessRate') }}</span>
+            <span class="stat-mini-val text-success">{{ appLogsStats.successRate }}%</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-label">{{ t('apps.statsAvgLatency') }}</span>
+            <span class="stat-mini-val">{{ appLogsStats.avgLatency }} ms</span>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="logs-filter-row">
+          <div class="search-input-wrapper flex-1">
+            <Search :size="14" class="search-icon" />
+            <input
+              v-model="logsSearch"
+              type="text"
+              :placeholder="t('webhooks.searchPlaceholder')"
+              class="form-control search-field text-xs"
+            />
+          </div>
+          <select v-model="logsStatusFilter" class="form-control select-field text-xs status-select" @change="fetchAppLogs">
+            <option value="">{{ t('webhooks.allStatuses') }}</option>
+            <option value="SUCCESS">Success (2xx)</option>
+            <option value="FAILED">Failed</option>
+            <option value="TIMEOUT">Timeout</option>
+            <option value="PENDING">Pending</option>
+            <option value="RETRYING">Retrying</option>
+          </select>
+        </div>
+
+        <!-- Logs List -->
+        <div v-if="logsLoading && appLogs.length === 0" class="text-center py-10">
+          <RefreshCw :size="24" class="spin-anim text-primary mx-auto" />
+          <p class="mt-2 text-muted text-xs">{{ t('common.loading') }}</p>
+        </div>
+
+        <div v-else-if="filteredAppLogs.length === 0" class="no-logs-empty-state">
+          <Activity :size="36" class="text-muted mx-auto mb-2" />
+          <h5 class="empty-title">{{ t('apps.noAppLogs') }}</h5>
+          <p class="text-muted text-xs mb-3">{{ t('apps.noAppLogsHint') }}</p>
+          <button class="btn btn-sm btn-primary" @click="openTestFromLogs">
+            <Send :size="13" /> {{ t('apps.sendFirstWebhook') }}
+          </button>
+        </div>
+
+        <div v-else class="logs-accordion-list">
+          <div
+            v-for="call in filteredAppLogs"
+            :key="call.id"
+            class="log-card"
+            :class="{ 'log-card-expanded': expandedCallId === call.id }"
+          >
+            <div class="log-card-summary" @click="toggleExpandCall(call.id)">
+              <div class="summary-left">
+                <span class="badge" :class="getStatusBadgeClass(call.status)">
+                  <span class="status-dot"></span>
+                  {{ call.status }}
+                </span>
+                <span v-if="call.response_status_code" class="badge" :class="call.response_status_code < 400 ? 'badge-success' : 'badge-danger'">
+                  HTTP {{ call.response_status_code }}
+                </span>
+                <span class="log-event-badge" dir="ltr">
+                  <Zap :size="12" class="text-primary flex-shrink-0" />
+                  <strong>{{ call.event_name || call.eventName }}</strong>
+                </span>
+              </div>
+              <div class="summary-right">
+                <span class="latency-pill" v-if="call.latency_ms">
+                  {{ call.latency_ms }} ms
+                </span>
+                <span class="text-muted text-xs" dir="ltr">
+                  {{ formatTime(call.created_at || call.createdAt) }}
+                </span>
+                <ChevronDown :size="14" class="expand-icon" :class="{ 'rotated': expandedCallId === call.id }" />
+              </div>
+            </div>
+
+            <!-- Expanded Details -->
+            <div v-if="expandedCallId === call.id" class="log-card-details">
+              <div class="details-section">
+                <div class="details-section-header">
+                  <span class="section-label">Target URL</span>
+                  <code class="text-xs" dir="ltr">{{ call.target_url || call.targetUrl }}</code>
+                </div>
+              </div>
+
+              <div class="details-section" v-if="call.signature">
+                <span class="section-label">HMAC-SHA256 Signature</span>
+                <div class="code-box-inline" dir="ltr">
+                  <code>{{ call.signature }}</code>
+                  <button class="btn-copy-xs" @click.stop="copyToClipboard(call.signature, 'Signature')">
+                    <Copy :size="11" />
+                  </button>
+                </div>
+              </div>
+
+              <div class="details-grid-2col">
+                <!-- Request Payload -->
+                <div class="details-col">
+                  <div class="d-flex justify-between items-center mb-1">
+                    <span class="section-label mb-0">{{ t('apps.requestPayload') }}</span>
+                    <button class="btn-copy-xs" @click.stop="copyToClipboard(call.payload_json || call.payloadJson, 'Payload')">
+                      <Copy :size="11" />
+                    </button>
+                  </div>
+                  <pre class="code-snippet" dir="ltr">{{ formatJson(call.payload_json || call.payloadJson) }}</pre>
+                </div>
+                <!-- Response Body -->
+                <div class="details-col">
+                  <span class="section-label">{{ t('apps.responseBody') }}</span>
+                  <pre class="code-snippet" dir="ltr">{{ formatJson(call.response_body || call.responseBody) || '(Empty response body)' }}</pre>
+                </div>
+              </div>
+
+              <div v-if="call.error_message || call.errorMessage" class="details-error-box">
+                <AlertCircle :size="14" class="text-danger flex-shrink-0" />
+                <span class="text-danger text-xs">{{ call.error_message || call.errorMessage }}</span>
+              </div>
+
+              <!-- Retry Button -->
+              <div class="details-footer-actions">
+                <button class="btn btn-xs btn-secondary" @click.stop="retryCall(call)" :disabled="retryingCallId === call.id">
+                  <RefreshCw :size="11" :class="{ 'spin-anim': retryingCallId === call.id }" />
+                  {{ t('apps.retryWebhook') }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn btn-secondary btn-sm" @click="closeLogsModal">{{ t('common.close') }}</button>
       </template>
     </Modal>
 
