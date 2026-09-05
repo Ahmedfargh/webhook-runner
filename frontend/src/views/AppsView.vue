@@ -278,12 +278,21 @@
             />
           </div>
           <div class="form-group">
-            <label class="form-label">{{ t('apps.overrideUrl') }}</label>
+            <div class="d-flex justify-between items-center mb-1">
+              <label class="form-label mb-0">{{ t('apps.overrideUrl') }}</label>
+              <button
+                type="button"
+                class="btn-text-link text-primary text-xs"
+                @click="testForm.target_url_override = 'http://localhost:8080/api/v1/webhooks/test-receiver'"
+              >
+                ⚡ Use Local Receiver
+              </button>
+            </div>
             <input
               v-model="testForm.target_url_override"
               type="url"
               class="form-control"
-              :placeholder="activeApp?.webhook_url || activeApp?.webhookUrl || 'https://webhook.site/...'"
+              :placeholder="'http://localhost:8080/api/v1/webhooks/test-receiver'"
               dir="ltr"
             />
           </div>

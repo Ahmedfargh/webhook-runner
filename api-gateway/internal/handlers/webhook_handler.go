@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	pb "webhookApiGateway/api/proto/runner"
 	"webhookApiGateway/internal/clients"
@@ -18,6 +19,28 @@ type WebhookHandler struct {
 
 func NewWebhookHandler(runnerClient *clients.RunnerClient) *WebhookHandler {
 	return &WebhookHandler{runnerClient: runnerClient}
+}
+
+// TestReceiver is a built-in mock destination webhook endpoint for local development & testing
+func (h *WebhookHandler) TestReceiver(c *gin.Context) {
+	var body interface{}
+	_ = c.ShouldBindJSON(&body)
+
+	sig := c.GetHeader("X-Webhook-Signature")
+	event := c.GetHeader("X-Webhook-Event")
+	webhookID := c.GetHeader("X-Webhook-ID")
+	ts := c.GetHeader("X-Webhook-Timestamp")
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":      "received",
+		"message":     "Webhook received and verified successfully by local test receiver",
+		"received_at": time.Now().Format(time.RFC3339),
+		"webhook_id":  webhookID,
+		"event":       event,
+		"timestamp":   ts,
+		"signature":   sig,
+		"payload":     body,
+	})
 }
 
 type SendWebhookInput struct {

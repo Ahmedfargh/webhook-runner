@@ -33,21 +33,21 @@ func SeedRunnerData(db *gorm.DB) {
 	}{
 		{
 			Name:          "Stripe Payment Ingestion",
-			WebhookURL:    "https://api.acme-enterprise.com/webhooks/stripe",
+			WebhookURL:    "http://localhost:8080/api/v1/webhooks/test-receiver",
 			AppID:         helpers.GenerateAppID(),
 			AppSecret:     helpers.GenerateAppSecret(),
 			WebhookSecret: helpers.GenerateWebhookSecret(),
 		},
 		{
 			Name:          "Shopify Store Order Sync",
-			WebhookURL:    "https://api.acme-enterprise.com/webhooks/shopify",
+			WebhookURL:    "http://localhost:8080/api/v1/webhooks/test-receiver",
 			AppID:         helpers.GenerateAppID(),
 			AppSecret:     helpers.GenerateAppSecret(),
 			WebhookSecret: helpers.GenerateWebhookSecret(),
 		},
 		{
 			Name:          "GitHub CI/CD Deployment Hook",
-			WebhookURL:    "https://ci.acme-enterprise.com/deployments/notify",
+			WebhookURL:    "http://localhost:8080/api/v1/webhooks/test-receiver",
 			AppID:         helpers.GenerateAppID(),
 			AppSecret:     helpers.GenerateAppSecret(),
 			WebhookSecret: helpers.GenerateWebhookSecret(),
