@@ -43,15 +43,18 @@ func ConnectDB() {
 					log.Println("Accounts database connection established successfully")
 
 					// 1. Auto-migrate all accounts tables
+					DB.Exec("SET FOREIGN_KEY_CHECKS = 0;")
 					if err := DB.AutoMigrate(
-						&models.Admin{},
-						&models.User{},
 						&models.Country{},
-						&models.Role{},
 						&models.Permission{},
+						&models.Role{},
+						&models.User{},
+						&models.Admin{},
 					); err != nil {
+						DB.Exec("SET FOREIGN_KEY_CHECKS = 1;")
 						log.Fatalf("Failed to auto-migrate accounts tables: %v", err)
 					}
+					DB.Exec("SET FOREIGN_KEY_CHECKS = 1;")
 					log.Println("Accounts database tables auto-migrated successfully")
 
 					// 2. Auto-seed initial reference data if tables are empty

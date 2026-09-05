@@ -40,12 +40,15 @@ func ConnectDB() {
 					log.Println("Webhook Runner database connection established successfully")
 
 					// Auto-migrate tables
+					DB.Exec("SET FOREIGN_KEY_CHECKS = 0;")
 					if err := DB.AutoMigrate(
 						&models.App{},
 						&models.WebhookCall{},
 					); err != nil {
+						DB.Exec("SET FOREIGN_KEY_CHECKS = 1;")
 						log.Fatalf("Failed to auto-migrate webhook runner database: %v", err)
 					}
+					DB.Exec("SET FOREIGN_KEY_CHECKS = 1;")
 					log.Println("Webhook Runner database tables auto-migrated successfully")
 
 					return

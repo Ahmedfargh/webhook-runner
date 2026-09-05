@@ -41,6 +41,7 @@ func ConnectDB() {
 					log.Println("Subscriptions database connection established successfully")
 
 					// Auto-migrate tables
+					DB.Exec("SET FOREIGN_KEY_CHECKS = 0;")
 					if err := DB.AutoMigrate(
 						&models.Plan{},
 						&models.Subscription{},
@@ -48,8 +49,10 @@ func ConnectDB() {
 						&models.InvoiceItem{},
 						&models.ManualPaymentRecord{},
 					); err != nil {
+						DB.Exec("SET FOREIGN_KEY_CHECKS = 1;")
 						log.Fatal("Failed to auto-migrate subscriptions database:", err)
 					}
+					DB.Exec("SET FOREIGN_KEY_CHECKS = 1;")
 					log.Println("Subscriptions database tables auto-migrated successfully")
 
 					// Auto-seed default subscription plans
