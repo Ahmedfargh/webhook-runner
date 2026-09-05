@@ -125,6 +125,8 @@ router.beforeEach((to, from, next) => {
     next('/')
   } else if (to.meta.requiresAdmin && !isAdmin) {
     next('/plans')
+  } else if (to.path === '/subscription' && isAdmin) {
+    next('/admin/billing')
   } else {
     next()
   }

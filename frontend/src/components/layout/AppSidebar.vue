@@ -70,29 +70,34 @@
         <span v-if="!isCollapsed">{{ t('nav.webhookLogs') }}</span>
       </router-link>
 
-      <!-- Billing and Plans (Both Users & Admins) -->
+      <!-- Billing and Plans Section -->
       <div v-if="!isCollapsed" class="nav-section-title">{{ t('nav.billingAndPlans') }}</div>
 
-      <router-link to="/plans" class="nav-item" active-class="nav-item-active">
-        <Sparkles :size="18" />
-        <span v-if="!isCollapsed">{{ t('nav.plansPricing') }}</span>
-      </router-link>
+      <!-- Admin-Only Billing Management Console -->
+      <template v-if="authStore.isAdmin">
+        <router-link to="/admin/billing" class="nav-item" active-class="nav-item-active">
+          <Sliders :size="18" />
+          <span v-if="!isCollapsed">{{ t('nav.adminBilling') }}</span>
+        </router-link>
+      </template>
 
-      <router-link to="/subscription" class="nav-item" active-class="nav-item-active">
-        <CreditCard :size="18" />
-        <span v-if="!isCollapsed">{{ t('nav.mySubscription') }}</span>
-      </router-link>
+      <!-- Regular User: Plans, My Subscription, and Invoices -->
+      <template v-else>
+        <router-link to="/plans" class="nav-item" active-class="nav-item-active">
+          <Sparkles :size="18" />
+          <span v-if="!isCollapsed">{{ t('nav.plansPricing') }}</span>
+        </router-link>
 
-      <router-link to="/invoices" class="nav-item" active-class="nav-item-active">
-        <Receipt :size="18" />
-        <span v-if="!isCollapsed">{{ t('nav.invoices') }}</span>
-      </router-link>
+        <router-link to="/subscription" class="nav-item" active-class="nav-item-active">
+          <CreditCard :size="18" />
+          <span v-if="!isCollapsed">{{ t('nav.mySubscription') }}</span>
+        </router-link>
 
-      <!-- Admin-Only Billing Console -->
-      <router-link v-if="authStore.isAdmin" to="/admin/billing" class="nav-item" active-class="nav-item-active">
-        <Sliders :size="18" />
-        <span v-if="!isCollapsed">{{ t('nav.adminBilling') }}</span>
-      </router-link>
+        <router-link to="/invoices" class="nav-item" active-class="nav-item-active">
+          <Receipt :size="18" />
+          <span v-if="!isCollapsed">{{ t('nav.invoices') }}</span>
+        </router-link>
+      </template>
 
       <!-- Admin-Only System Security -->
       <template v-if="authStore.isAdmin">
