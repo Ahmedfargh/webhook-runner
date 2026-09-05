@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"webhookRunner/internal/models"
+	"webhookRunner/internal/seeders"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
@@ -50,6 +51,9 @@ func ConnectDB() {
 					}
 					DB.Exec("SET FOREIGN_KEY_CHECKS = 1;")
 					log.Println("Webhook Runner database tables auto-migrated successfully")
+
+					// Auto-seed initial applications and demo execution traces
+					seeders.SeedRunnerData(DB)
 
 					return
 				}

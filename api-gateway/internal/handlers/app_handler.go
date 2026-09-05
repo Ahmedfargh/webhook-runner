@@ -20,20 +20,27 @@ func NewAppHandler(runnerClient *clients.RunnerClient) *AppHandler {
 }
 
 type CreateAppInput struct {
+	UserID     string `json:"user_id"`
 	Name       string `json:"name" binding:"required"`
-	WebhookURL string `json:"webhook_url" binding:"required"`
+	WebhookURL string `json:"webhook_url"`
 }
 
 func (h *AppHandler) CreateApp(c *gin.Context) {
 	userID := c.GetString("user_id")
+	userRole := c.GetString("user_role")
 	var input CreateAppInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload: " + err.Error()})
 		return
 	}
 
+	targetUserID := userID
+	if (userRole == "admin" || userRole == "administrator") && input.UserID != "" {
+		targetUserID = input.UserID
+	}
+
 	res, err := h.runnerClient.App.CreateApp(c.Request.Context(), &pb.CreateAppRequest{
-		UserId:     userID,
+		UserId:     targetUserID,
 		Name:       input.Name,
 		WebhookUrl: input.WebhookURL,
 	})
@@ -66,11 +73,15 @@ func (h *AppHandler) ListApps(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	search := c.Query("search")
-
 	role := c.GetString("user_role")
+
 	filterUserID := userID
-	if role == "admin" && c.Query("all") == "true" {
-		filterUserID = ""
+	if role == "admin" || role == "administrator" {
+		if targetUser := c.Query("user_id"); targetUser != "" {
+			filterUserID = targetUser
+		} else {
+			filterUserID = ""
+		}
 	}
 
 	res, err := h.runnerClient.App.ListApps(c.Request.Context(), &pb.ListAppsRequest{

@@ -15,3 +15,6 @@ var RolesJSON []byte
 
 //go:embed admins.json
 var AdminsJSON []byte
+
+//go:embed users.json
+var UsersJSON []byte

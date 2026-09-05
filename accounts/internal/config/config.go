@@ -68,6 +68,9 @@ func ConnectDB() {
 					if err := seeders.SeedAdminsFromFile(DB, "admins.json"); err != nil {
 						log.Printf("Warning: Admin seeding: %v\n", err)
 					}
+					if err := seeders.SeedUsersFromFile(DB, "users.json"); err != nil {
+						log.Printf("Warning: Users seeding: %v\n", err)
+					}
 
 					return
 				}

@@ -50,14 +50,26 @@
 
     <!-- Search & Filter Bar -->
     <div class="card filter-card mb-6">
-      <div class="search-input-wrapper">
-        <Search :size="16" class="search-icon" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          :placeholder="t('apps.filterPlaceholder')"
-          class="form-control search-field"
-        />
+      <div class="filter-row">
+        <div class="search-input-wrapper">
+          <Search :size="16" class="search-icon" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            :placeholder="t('apps.filterPlaceholder')"
+            class="form-control search-field"
+          />
+        </div>
+
+        <!-- Admin: Filter Apps by User -->
+        <div v-if="authStore.isAdmin && usersList.length > 0" class="user-filter-box">
+          <select v-model="selectedUserFilter" class="form-control user-select" @change="fetchApps">
+            <option value="">{{ t('apps.allUsers') }}</option>
+            <option v-for="u in usersList" :key="u.id" :value="u.id">
+              {{ u.name }} ({{ u.email }})
+            </option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -91,7 +103,14 @@
             </div>
             <div class="app-name-meta">
               <h3 class="app-name">{{ app.name }}</h3>
-              <span class="badge badge-success">{{ t('common.active') }}</span>
+              <div class="badges-row">
+                <span class="badge badge-success">{{ t('common.active') }}</span>
+                <!-- Admin: Owner Pill -->
+                <span v-if="authStore.isAdmin && (app.user_id || app.userId)" class="badge badge-secondary owner-badge" :title="getUserName(app.user_id || app.userId)">
+                  <UserIcon :size="11" />
+                  <span>{{ getUserShortName(app.user_id || app.userId) }}</span>
+                </span>
+              </div>
             </div>
           </div>
           <div class="action-buttons-group">
@@ -182,6 +201,17 @@
       @close="closeDrawer"
     >
       <form @submit.prevent="saveApp" class="drawer-form">
+        <!-- Admin-Only: Target User Account Selection -->
+        <div v-if="authStore.isAdmin && !isEditing" class="form-group">
+          <label class="form-label">{{ t('apps.selectUser') }} *</label>
+          <select v-model="form.user_id" required class="form-control">
+            <option value="" disabled>{{ t('apps.selectUserPlaceholder') }}</option>
+            <option v-for="u in usersList" :key="u.id" :value="u.id">
+              {{ u.name }} ({{ u.email }})
+            </option>
+          </select>
+        </div>
+
         <div class="form-group">
           <label class="form-label">{{ t('apps.appName') }} *</label>
           <input
@@ -332,8 +362,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from '../locales'
+import { useAuthStore } from '../stores/auth'
 import { appService } from '../services/appService'
 import { webhookService } from '../services/webhookService'
+import { userService } from '../services/userService'
 import { useToastStore } from '../stores/toast'
 import Drawer from '../components/common/Drawer.vue'
 import Modal from '../components/common/Modal.vue'
@@ -356,9 +388,11 @@ import {
   CheckCircle2,
   AlertCircle,
   FileText,
+  User as UserIcon,
 } from 'lucide-vue-next'
 
 const { t } = useI18n()
+const authStore = useAuthStore()
 const toastStore = useToastStore()
 
 const loading = ref(false)
@@ -366,6 +400,8 @@ const saving = ref(false)
 const sending = ref(false)
 const deleting = ref(false)
 const apps = ref([])
+const usersList = ref([])
+const selectedUserFilter = ref('')
 const searchQuery = ref('')
 const revealedSecrets = ref({})
 
@@ -374,6 +410,7 @@ const isDrawerOpen = ref(false)
 const isEditing = ref(false)
 const form = ref({
   id: '',
+  user_id: '',
   name: '',
   webhook_url: '',
   webhook_secret: '',
@@ -429,6 +466,18 @@ function getAppInitials(name) {
     .toUpperCase()
 }
 
+function getUserName(userId) {
+  if (!userId) return ''
+  const u = usersList.value.find((user) => user.id === userId)
+  return u ? `${u.name} (${u.email})` : ''
+}
+
+function getUserShortName(userId) {
+  if (!userId) return ''
+  const u = usersList.value.find((user) => user.id === userId)
+  return u ? u.name : `${userId.slice(0, 8)}...`
+}
+
 function isRevealed(appId, field) {
   return !!revealedSecrets.value[`${appId}_${field}`]
 }
@@ -448,10 +497,25 @@ async function copyToClipboard(text, label) {
   }
 }
 
+async function fetchUsers() {
+  if (authStore.isAdmin) {
+    try {
+      const res = await userService.getUsers({ limit: 100 })
+      usersList.value = res.data || res.users || []
+    } catch (e) {
+      // silent
+    }
+  }
+}
+
 async function fetchApps() {
   loading.value = true
   try {
-    const res = await appService.listApps()
+    const params = {}
+    if (authStore.isAdmin && selectedUserFilter.value) {
+      params.user_id = selectedUserFilter.value
+    }
+    const res = await appService.listApps(params)
     apps.value = res.data || []
   } catch (err) {
     toastStore.error(err.response?.data?.error || 'Failed to load applications.')
@@ -464,6 +528,7 @@ function openCreateDrawer() {
   isEditing.value = false
   form.value = {
     id: '',
+    user_id: usersList.value[0]?.id || '',
     name: '',
     webhook_url: '',
     webhook_secret: '',
@@ -475,6 +540,7 @@ function openEditDrawer(app) {
   isEditing.value = true
   form.value = {
     id: app.id,
+    user_id: app.user_id || app.userId || '',
     name: app.name,
     webhook_url: app.webhook_url || app.webhookUrl || '',
     webhook_secret: '',
@@ -498,6 +564,7 @@ async function saveApp() {
       toastStore.success('Application updated successfully!')
     } else {
       await appService.createApp({
+        user_id: form.value.user_id,
         name: form.value.name,
         webhook_url: form.value.webhook_url,
         webhook_secret: form.value.webhook_secret,
@@ -592,8 +659,9 @@ async function executeTestDispatch() {
   }
 }
 
-onMounted(() => {
-  fetchApps()
+onMounted(async () => {
+  await fetchUsers()
+  await fetchApps()
 })
 </script>
 
@@ -650,10 +718,17 @@ onMounted(() => {
   padding: 0.875rem 1.25rem;
 }
 
+.filter-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .search-input-wrapper {
   position: relative;
-  width: 100%;
-  max-width: 420px;
+  flex: 1;
+  min-width: 260px;
 }
 
 .search-icon {
@@ -666,6 +741,10 @@ onMounted(() => {
 
 .search-field {
   padding-inline-start: 2.25rem;
+}
+
+.user-filter-box {
+  min-width: 220px;
 }
 
 .apps-grid {
@@ -718,7 +797,7 @@ onMounted(() => {
 .app-name-meta {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.25rem;
 }
 
 .app-name {
@@ -726,6 +805,20 @@ onMounted(() => {
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+}
+
+.badges-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.owner-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 11px;
 }
 
 .action-buttons-group {

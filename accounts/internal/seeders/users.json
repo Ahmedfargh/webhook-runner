@@ -1,0 +1,30 @@
+[
+  {
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "2025550143",
+    "country_code": "US",
+    "password": "password123"
+  },
+  {
+    "name": "Sarah Connor",
+    "email": "sarah.connor@acme.com",
+    "phone": "7911123456",
+    "country_code": "GB",
+    "password": "password123"
+  },
+  {
+    "name": "Ahmed Farghaly",
+    "email": "ahmed.farghaly@webhook.io",
+    "phone": "01001234567",
+    "country_code": "EG",
+    "password": "password123"
+  },
+  {
+    "name": "TechCorp Developer",
+    "email": "developer@techcorp.io",
+    "phone": "15123456789",
+    "country_code": "DE",
+    "password": "password123"
+  }
+]
