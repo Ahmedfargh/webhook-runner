@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package accounts.v1;
+
+import "common.proto";
+import "role.proto";
+import "permission.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "accounts/api/proto/v1;accountsv1";
+
+service AdminService {
+  rpc CreateAdmin(CreateAdminRequest) returns (AdminResponse);
+  rpc GetAdmin(GetAdminRequest) returns (AdminResponse);
+  rpc UpdateAdmin(UpdateAdminRequest) returns (AdminResponse);
+  rpc DeleteAdmin(DeleteAdminRequest) returns (DeleteAdminResponse);
+  rpc ListAdmins(ListAdminsRequest) returns (ListAdminsResponse);
+  rpc AssignRolesToAdmin(AssignRolesToAdminRequest) returns (AdminResponse);
+  rpc AssignPermissionsToAdmin(AssignPermissionsToAdminRequest) returns (AdminResponse);
+}
+
+message AdminResponse {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string phone = 4;
+  string country_id = 5;
+  CountryResponse country = 6;
+  repeated RoleResponse roles = 7;
+  repeated PermissionResponse permissions = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message CreateAdminRequest {
+  string name = 1;
+  string email = 2;
+  string phone = 3;
+  string password = 4;
+  string country_id = 5;
+  repeated string role_ids = 6;
+  repeated string permission_ids = 7;
+}
+
+message GetAdminRequest {
+  string id = 1;
+}
+
+message UpdateAdminRequest {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string phone = 4;
+  optional string password = 5;
+  string country_id = 6;
+  repeated string role_ids = 7;
+  repeated string permission_ids = 8;
+}
+
+message DeleteAdminRequest {
+  string id = 1;
+}
+
+message DeleteAdminResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ListAdminsRequest {
+  PaginationRequest pagination = 1;
+}
+
+message ListAdminsResponse {
+  repeated AdminResponse admins = 1;
+  PaginationMetadata pagination = 2;
+}
+
+message AssignRolesToAdminRequest {
+  string admin_id = 1;
+  repeated string role_ids = 2;
+}
+
+message AssignPermissionsToAdminRequest {
+  string admin_id = 1;
+  repeated string permission_ids = 2;
+}

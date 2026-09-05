@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package subscriptions.v1;
+
+option go_package = "subscriptions/api/proto/v1;subscriptionsv1";
+
+message ManualPaymentResponse {
+  string id = 1;
+  string invoice_id = 2;
+  string user_id = 3;
+  double amount = 4;
+  string currency = 5;
+  string payment_method = 6; // bank_transfer, cash, wire, check
+  string transaction_reference = 7;
+  string payer_name = 8;
+  string payer_notes = 9;
+  string recorded_by_admin_id = 10;
+  string admin_notes = 11;
+  string status = 12; // submitted, approved, rejected
+  string created_at = 13;
+  string updated_at = 14;
+}
+
+message SubmitManualPaymentRequest {
+  string invoice_id = 1;
+  string user_id = 2;
+  double amount = 3;
+  string currency = 4;
+  string payment_method = 5;
+  string transaction_reference = 6;
+  string payer_name = 7;
+  string payer_notes = 8;
+}
+
+message ReviewManualPaymentRequest {
+  string payment_id = 1;
+  bool approve = 2;
+  string admin_notes = 3;
+  string admin_id = 4;
+}
+
+message ReviewManualPaymentResponse {
+  bool success = 1;
+  string message = 2;
+  ManualPaymentResponse payment = 3;
+}
+
+message ListManualPaymentsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string status = 3;
+  string search = 4;
+}
+
+message ListManualPaymentsResponse {
+  repeated ManualPaymentResponse payments = 1;
+  int64 total_items = 2;
+  int32 current_page = 3;
+  int32 total_pages = 4;
+}
+
+service ManualPaymentService {
+  rpc SubmitManualPayment(SubmitManualPaymentRequest) returns (ManualPaymentResponse);
+  rpc ReviewManualPayment(ReviewManualPaymentRequest) returns (ReviewManualPaymentResponse);
+  rpc ListManualPayments(ListManualPaymentsRequest) returns (ListManualPaymentsResponse);
+}

@@ -9,12 +9,12 @@ import (
 )
 
 type Admin struct {
-	ID          uuid.UUID    `gorm:"type:uuid;primaryKey;" json:"id"`
-	Name        string       `gorm:"not null" json:"name"`
-	Email       string       `gorm:"uniqueIndex;not null" json:"email"`
+	ID          uuid.UUID    `gorm:"type:char(36);primaryKey;" json:"id"`
+	Name        string       `gorm:"type:varchar(191);not null" json:"name"`
+	Email       string       `gorm:"type:varchar(191);uniqueIndex;not null" json:"email"`
 	Phone       string       `gorm:"type:varchar(20);not null" json:"phone"`
-	Password    string       `gorm:"not null" json:"-"`
-	CountryID   uuid.UUID    `gorm:"type:uuid;not null" json:"country_id"`
+	Password    string       `gorm:"type:varchar(255);not null" json:"-"`
+	CountryID   uuid.UUID    `gorm:"type:char(36);not null" json:"country_id"`
 	Country     Country      `gorm:"foreignKey:CountryID" json:"country"`
 	Roles       []Role       `gorm:"many2many:admin_has_role;constraint:OnDelete:CASCADE;" json:"roles"`
 	Permissions []Permission `gorm:"many2many:admin_has_permission;constraint:OnDelete:CASCADE;" json:"permissions"`

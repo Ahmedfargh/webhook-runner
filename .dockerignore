@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+.env.*
+node_modules/
+dist/
+*.tmp
+*.log
+loadtest_results.json
+loadtest_failures.txt
+loadtest_report.json
+bin/

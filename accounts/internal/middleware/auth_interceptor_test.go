@@ -14,13 +14,16 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func TestAuthInterceptor_TokenAuth(t *testing.T) {
+func TestAuthInterceptor_ServiceAndTokenAuth(t *testing.T) {
 	secretToken := "my-secret-token"
-	interceptor := middleware.NewAuthInterceptor(secretToken)
+	allowedServices := []string{"api-gateway", "webhook-runner"}
+	interceptor := middleware.NewAuthInterceptor(secretToken, allowedServices)
 
 	dummyHandler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		token := ctx.Value(middleware.AuthTokenContextKey)
+		service := ctx.Value(middleware.ServiceNameContextKey)
 		assert.Equal(t, secretToken, token)
+		assert.Equal(t, "api-gateway", service)
 		return "success", nil
 	}
 
@@ -36,21 +39,55 @@ func TestAuthInterceptor_TokenAuth(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, codes.Unauthenticated, st.Code())
 
-	// 2. Invalid Token -> Unauthenticated
-	ctxWithBadToken := metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", "Bearer wrong-token"))
+	// 2. Missing Service Name Header -> PermissionDenied
+	ctxNoService := metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", "Bearer my-secret-token"))
+	_, err = interceptor.Unary()(ctxNoService, nil, info, dummyHandler)
+	assert.Error(t, err)
+	st, ok = status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, codes.PermissionDenied, st.Code())
+
+	// 3. Disallowed Service Name -> PermissionDenied
+	ctxBadService := metadata.NewIncomingContext(ctx, metadata.Pairs(
+		"x-service-name", "unauthorized-external-app",
+		"authorization", "Bearer my-secret-token",
+	))
+	_, err = interceptor.Unary()(ctxBadService, nil, info, dummyHandler)
+	assert.Error(t, err)
+	st, ok = status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, codes.PermissionDenied, st.Code())
+
+	// 4. Invalid Token -> Unauthenticated
+	ctxWithBadToken := metadata.NewIncomingContext(ctx, metadata.Pairs(
+		"x-service-name", "api-gateway",
+		"authorization", "Bearer wrong-token",
+	))
 	_, err = interceptor.Unary()(ctxWithBadToken, nil, info, dummyHandler)
 	assert.Error(t, err)
 	st, ok = status.FromError(err)
 	assert.True(t, ok)
 	assert.Equal(t, codes.Unauthenticated, st.Code())
 
-	// 3. Valid Token with Bearer prefix -> Success
-	ctxWithGoodToken := metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", "Bearer my-secret-token"))
-	res, err := interceptor.Unary()(ctxWithGoodToken, nil, info, dummyHandler)
+	// 5. Valid Service + Valid Token with Bearer prefix -> Success
+	ctxWithGoodCreds := metadata.NewIncomingContext(ctx, metadata.Pairs(
+		"x-service-name", "api-gateway",
+		"authorization", "Bearer my-secret-token",
+	))
+	res, err := interceptor.Unary()(ctxWithGoodCreds, nil, info, dummyHandler)
 	require.NoError(t, err)
 	assert.Equal(t, "success", res)
 
-	// 4. Whitelisted Reflection method -> Success without header
+	// 6. Valid Service + Valid x-service-token header -> Success
+	ctxWithServiceToken := metadata.NewIncomingContext(ctx, metadata.Pairs(
+		"x-service-name", "api-gateway",
+		"x-service-token", "my-secret-token",
+	))
+	res, err = interceptor.Unary()(ctxWithServiceToken, nil, info, dummyHandler)
+	require.NoError(t, err)
+	assert.Equal(t, "success", res)
+
+	// 7. Whitelisted Reflection method -> Success without headers
 	reflectionInfo := &grpc.UnaryServerInfo{
 		FullMethod: "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo",
 	}

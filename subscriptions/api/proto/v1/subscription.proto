@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package subscriptions.v1;
+
+option go_package = "subscriptions/api/proto/v1;subscriptionsv1";
+
+import "api/proto/v1/plan.proto";
+
+message SubscriptionResponse {
+  string id = 1;
+  string user_id = 2;
+  string plan_id = 3;
+  PlanResponse plan = 4;
+  string status = 5; // active, pending_manual_payment, trialing, past_due, canceled, expired
+  string billing_cycle = 6; // monthly, annually
+  string current_period_start = 7;
+  string current_period_end = 8;
+  string trial_ends_at = 9;
+  bool cancel_at_period_end = 10;
+  string custom_notes = 11;
+  string created_at = 12;
+  string updated_at = 13;
+}
+
+message SubscribeRequest {
+  string user_id = 1;
+  string plan_id = 2;
+  string billing_cycle = 3; // monthly, annually
+  string payment_method = 4; // bank_transfer, wire, cash, check
+  string notes = 5;
+}
+
+message SubscribeResponse {
+  SubscriptionResponse subscription = 1;
+  string invoice_id = 2;
+  string invoice_number = 3;
+  double amount_due = 4;
+  string currency = 5;
+  string payment_instructions = 6;
+}
+
+message GetUserSubscriptionRequest {
+  string user_id = 1;
+}
+
+message CancelSubscriptionRequest {
+  string user_id = 1;
+  string reason = 2;
+  bool immediately = 3;
+}
+
+message CancelSubscriptionResponse {
+  bool success = 1;
+  string message = 2;
+  SubscriptionResponse subscription = 3;
+}
+
+message AdminOverrideSubscriptionRequest {
+  string user_id = 1;
+  string plan_id = 2;
+  string status = 3;
+  string current_period_end = 4;
+  string admin_notes = 5;
+}
+
+message ListSubscriptionsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string status = 3;
+  string search = 4;
+}
+
+message ListSubscriptionsResponse {
+  repeated SubscriptionResponse subscriptions = 1;
+  int64 total_items = 2;
+  int32 current_page = 3;
+  int32 total_pages = 4;
+}
+
+service SubscriptionService {
+  rpc Subscribe(SubscribeRequest) returns (SubscribeResponse);
+  rpc GetUserSubscription(GetUserSubscriptionRequest) returns (SubscriptionResponse);
+  rpc CancelSubscription(CancelSubscriptionRequest) returns (CancelSubscriptionResponse);
+  rpc AdminOverrideSubscription(AdminOverrideSubscriptionRequest) returns (SubscriptionResponse);
+  rpc ListSubscriptions(ListSubscriptionsRequest) returns (ListSubscriptionsResponse);
+}

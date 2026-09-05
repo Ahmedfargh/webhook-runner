@@ -70,7 +70,19 @@ func (r *adminRepository) Update(ctx context.Context, admin *models.Admin) error
 }
 
 func (r *adminRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Select("Roles", "Permissions").Delete(&models.Admin{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var admin models.Admin
+		admin.ID = id
+		_ = tx.Model(&admin).Association("Roles").Clear()
+		_ = tx.Model(&admin).Association("Permissions").Clear()
+		if err := tx.Exec("DELETE FROM admin_has_role WHERE admin_id = ?", id).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec("DELETE FROM admin_has_permission WHERE admin_id = ?", id).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&models.Admin{}, "id = ?", id).Error
+	})
 }
 
 func (r *adminRepository) List(ctx context.Context, page, pageSize int, search string) ([]models.Admin, int64, error) {

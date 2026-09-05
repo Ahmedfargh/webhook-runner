@@ -5,24 +5,45 @@
 *.so
 *.dylib
 bin/
+server
+main
 accounts/Seeder
 accounts/migrate
-main
 accounts/main
+accounts/server
+api-gateway/server
+subscriptions/server
+webhook-runner/server
 
 # Environment variables
 .env
 .env.*
 !.env.example
+!.env.docker.example
 
-# IDEs
+# Frontend artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+node_modules/
+dist/
+
+# Benchmark and temporary test logs
+loadtest_results.json
+loadtest_failures.txt
+loadtest_report.json
+*.log
+*.tmp
+
+# IDEs & Editors
 .idea/
 .vscode/
 *.swp
 *~
 
-# OS
+# OS artifacts
 .DS_Store
+Thumbs.db
 
 # Test / Coverage
 *.out

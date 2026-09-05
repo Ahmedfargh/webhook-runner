@@ -11,6 +11,7 @@ import (
 	"accounts/internal/config"
 	"accounts/internal/middleware"
 	"accounts/internal/modules/admin"
+	"accounts/internal/modules/country"
 	"accounts/internal/modules/permission"
 	"accounts/internal/modules/role"
 	"accounts/internal/modules/user"
@@ -38,8 +39,8 @@ func main() {
 		log.Fatalf("Failed to listen on %s: %v", address, err)
 	}
 
-	// 3. Setup Token-based Authentication Interceptor (Bearer token)
-	authInterceptor := middleware.NewAuthInterceptor(os.Getenv("AUTH_TOKEN"))
+	// 3. Setup Token-based & Service-Whitelisted Authentication Interceptor
+	authInterceptor := middleware.NewAuthInterceptor(os.Getenv("AUTH_TOKEN"), nil)
 
 	// 4. Create gRPC Server with Interceptor
 	grpcServer := grpc.NewServer(
@@ -50,6 +51,7 @@ func main() {
 	// 4. Initialize Shared Repositories & HMVC Modules
 	countryRepo := repository.NewCountryRepository(config.DB)
 
+	countryMod := country.NewCountryModule(config.DB)
 	permissionMod := permission.NewPermissionModule(config.DB)
 	roleMod := role.NewRoleModule(config.DB, permissionMod.Repository, permissionMod.Presenter)
 	userMod := user.NewUserModule(config.DB, countryRepo)
@@ -63,6 +65,7 @@ func main() {
 	)
 
 	// 5. Register gRPC Service Handlers
+	countryMod.RegisterGRPC(grpcServer)
 	permissionMod.RegisterGRPC(grpcServer)
 	roleMod.RegisterGRPC(grpcServer)
 	userMod.RegisterGRPC(grpcServer)

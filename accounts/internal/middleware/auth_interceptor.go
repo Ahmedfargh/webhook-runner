@@ -16,20 +16,44 @@ type contextKey string
 const (
 	// AuthTokenContextKey stores the authenticated token in context
 	AuthTokenContextKey contextKey = "auth_token"
+	// ServiceNameContextKey stores the calling service name in context
+	ServiceNameContextKey contextKey = "service_name"
 )
 
-// AuthInterceptor enforces token-based authentication on incoming gRPC requests
+// AuthInterceptor enforces token-based authentication and service authorization on incoming gRPC requests
 type AuthInterceptor struct {
-	expectedToken  string
-	exemptMethods  map[string]bool
+	expectedToken   string
+	allowedServices map[string]bool
+	exemptMethods   map[string]bool
 }
 
-// NewAuthInterceptor creates a new token-based gRPC auth interceptor
-func NewAuthInterceptor(expectedToken string, exemptMethods ...string) *AuthInterceptor {
+// NewAuthInterceptor creates a new token-based gRPC auth & service authorization interceptor
+func NewAuthInterceptor(expectedToken string, allowedServices []string, exemptMethods ...string) *AuthInterceptor {
 	if expectedToken == "" {
 		expectedToken = os.Getenv("AUTH_TOKEN")
 		if expectedToken == "" {
 			expectedToken = "webhook-accounts-secret-token"
+		}
+	}
+
+	allowed := make(map[string]bool)
+	if len(allowedServices) == 0 {
+		envAllowed := os.Getenv("ALLOWED_SERVICES")
+		if envAllowed == "" {
+			envAllowed = "api-gateway,webhook-runner"
+		}
+		for _, s := range strings.Split(envAllowed, ",") {
+			s = strings.TrimSpace(s)
+			if s != "" {
+				allowed[s] = true
+			}
+		}
+	} else {
+		for _, s := range allowedServices {
+			s = strings.TrimSpace(s)
+			if s != "" {
+				allowed[s] = true
+			}
 		}
 	}
 
@@ -44,12 +68,13 @@ func NewAuthInterceptor(expectedToken string, exemptMethods ...string) *AuthInte
 	}
 
 	return &AuthInterceptor{
-		expectedToken: expectedToken,
-		exemptMethods: exempt,
+		expectedToken:   expectedToken,
+		allowedServices: allowed,
+		exemptMethods:   exempt,
 	}
 }
 
-// Unary returns a gRPC unary server interceptor for token authentication
+// Unary returns a gRPC unary server interceptor for token & service authentication
 func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
@@ -71,7 +96,7 @@ func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 	}
 }
 
-// Stream returns a gRPC stream server interceptor for token authentication
+// Stream returns a gRPC stream server interceptor for token & service authentication
 func (a *AuthInterceptor) Stream() grpc.StreamServerInterceptor {
 	return func(
 		srv interface{},
@@ -83,11 +108,12 @@ func (a *AuthInterceptor) Stream() grpc.StreamServerInterceptor {
 			return handler(srv, ss)
 		}
 
-		_, err := a.authenticate(ss.Context())
+		newCtx, err := a.authenticate(ss.Context())
 		if err != nil {
 			return err
 		}
 
+		_ = newCtx
 		return handler(srv, ss)
 	}
 }
@@ -98,9 +124,26 @@ func (a *AuthInterceptor) authenticate(ctx context.Context) (context.Context, er
 		return nil, status.Error(codes.Unauthenticated, "missing metadata headers")
 	}
 
+	// 1. Verify Calling Service Name Header (e.g. X-Service-Name)
+	serviceHeaders := md.Get("x-service-name")
+	if len(serviceHeaders) == 0 || strings.TrimSpace(serviceHeaders[0]) == "" {
+		return nil, status.Error(codes.PermissionDenied, "missing caller service identification (x-service-name)")
+	}
+
+	serviceName := strings.TrimSpace(serviceHeaders[0])
+	if !a.allowedServices[serviceName] {
+		return nil, status.Errorf(codes.PermissionDenied, "service '%s' is not authorized to access accounts service", serviceName)
+	}
+
+	// 2. Verify Bearer Token or Service Token
 	authHeaders := md.Get("authorization")
 	if len(authHeaders) == 0 {
-		return nil, status.Error(codes.Unauthenticated, "missing authorization header")
+		tokenHeaders := md.Get("x-service-token")
+		if len(tokenHeaders) > 0 {
+			authHeaders = tokenHeaders
+		} else {
+			return nil, status.Error(codes.Unauthenticated, "missing authorization header")
+		}
 	}
 
 	token := authHeaders[0]
@@ -113,5 +156,7 @@ func (a *AuthInterceptor) authenticate(ctx context.Context) (context.Context, er
 		return nil, status.Error(codes.Unauthenticated, "invalid authentication token")
 	}
 
-	return context.WithValue(ctx, AuthTokenContextKey, token), nil
+	ctx = context.WithValue(ctx, AuthTokenContextKey, token)
+	ctx = context.WithValue(ctx, ServiceNameContextKey, serviceName)
+	return ctx, nil
 }

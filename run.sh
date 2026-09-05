@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+
+# ==============================================================================
+# Webhook Microservices Ecosystem Runner
+# Starts: Accounts gRPC, Subscriptions gRPC, API Gateway (REST), and Vue.js Frontend
+# ==============================================================================
+
+set -e
+
+# Colors
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+BOLD='\033[1m'
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+echo -e "${BOLD}${CYAN}===================================================================${NC}"
+echo -e "${BOLD}${CYAN}  🚀 Starting Webhook Microservices Ecosystem (Zoho UI & Gateway)  ${NC}"
+echo -e "${BOLD}${CYAN}===================================================================${NC}"
+
+# Ensure MySQL databases exist
+if command -v mysql &> /dev/null; then
+    mysql -u root -e "CREATE DATABASE IF NOT EXISTS webhook_accounts; CREATE DATABASE IF NOT EXISTS webhook_subscriptions;" 2>/dev/null || true
+elif command -v mariadb &> /dev/null; then
+    mariadb -u root -e "CREATE DATABASE IF NOT EXISTS webhook_accounts; CREATE DATABASE IF NOT EXISTS webhook_subscriptions;" 2>/dev/null || true
+fi
+
+# Ensure .env files exist
+if [ ! -f "$ROOT_DIR/accounts/.env" ]; then
+    echo -e "${YELLOW}[Notice] accounts/.env not found, generating default config...${NC}"
+    cat <<EOF > "$ROOT_DIR/accounts/.env"
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=webhook_accounts
+GRPC_PORT=50051
+AUTH_TOKEN=4f7f956f34bcfa0c9a55aff6b98c4e1d87e1da6d0d33f5021b5937123d7330c1
+ALLOWED_SERVICES=api-gateway,webhook-runner
+EOF
+fi
+
+if [ ! -f "$ROOT_DIR/subscriptions/.env" ]; then
+    echo -e "${YELLOW}[Notice] subscriptions/.env not found, generating default config...${NC}"
+    cat <<EOF > "$ROOT_DIR/subscriptions/.env"
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=webhook_subscriptions
+GRPC_PORT=50052
+AUTH_TOKEN=4f7f956f34bcfa0c9a55aff6b98c4e1d87e1da6d0d33f5021b5937123d7330c1
+ALLOWED_SERVICES=api-gateway,webhook-runner
+EOF
+fi
+
+if [ ! -f "$ROOT_DIR/api-gateway/.env" ]; then
+    echo -e "${YELLOW}[Notice] api-gateway/.env not found, generating default config...${NC}"
+    cat <<EOF > "$ROOT_DIR/api-gateway/.env"
+PORT=8080
+ACCOUNTS_GRPC_HOST=localhost
+ACCOUNTS_GRPC_PORT=50051
+SUBSCRIPTIONS_GRPC_HOST=localhost
+SUBSCRIPTIONS_GRPC_PORT=50052
+SERVICE_NAME=api-gateway
+SERVICE_TOKEN=4f7f956f34bcfa0c9a55aff6b98c4e1d87e1da6d0d33f5021b5937123d7330c1
+JWT_SECRET=api-gateway-super-secret-jwt-key-2026
+ALLOWED_ORIGINS=*
+EOF
+fi
+
+if [ ! -f "$ROOT_DIR/frontend/.env" ]; then
+    echo -e "${YELLOW}[Notice] frontend/.env not found, generating default config...${NC}"
+    cat <<EOF > "$ROOT_DIR/frontend/.env"
+VITE_API_URL=http://localhost:8080/api/v1
+EOF
+fi
+
+# Track child PIDs
+PIDS=()
+
+cleanup() {
+    echo -e "\n${YELLOW}🛑 Shutting down all microservices gracefully...${NC}"
+    for pid in "${PIDS[@]}"; do
+        if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null || true
+        fi
+    done
+    wait 2>/dev/null || true
+    echo -e "${GREEN}✓ All services stopped.${NC}"
+    exit 0
+}
+
+trap cleanup SIGINT SIGTERM EXIT
+
+# 1. Start Accounts gRPC Service
+echo -e "${BLUE}▶ [1/4] Starting Accounts gRPC Service on port 50051...${NC}"
+(
+    cd "$ROOT_DIR/accounts"
+    go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${BLUE}[Accounts gRPC]${NC}      ")/"
+) &
+PIDS+=($!)
+
+# 2. Start Subscriptions gRPC Service
+echo -e "${PURPLE}▶ [2/4] Starting Subscriptions gRPC Service on port 50052...${NC}"
+(
+    cd "$ROOT_DIR/subscriptions"
+    go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${PURPLE}[Subscriptions gRPC]${NC} ")/"
+) &
+PIDS+=($!)
+
+# Give gRPC servers a moment to bind ports
+sleep 1.5
+
+# 3. Start API Gateway
+echo -e "${GREEN}▶ [3/4] Starting API Gateway HTTP REST on port 8080...${NC}"
+(
+    cd "$ROOT_DIR/api-gateway"
+    go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${GREEN}[API Gateway]${NC}        ")/ "
+) &
+PIDS+=($!)
+
+# Give Gateway a moment to bind port
+sleep 1
+
+# 4. Start Frontend Dev Server
+echo -e "${CYAN}▶ [4/4] Starting Vue 3 Frontend (Zoho Projects UI) on port 5173...${NC}"
+(
+    cd "$ROOT_DIR/frontend"
+    npm run dev -- --host 2>&1 | sed -e "s/^/$(printf "${CYAN}[Frontend UI]${NC}        ")/"
+) &
+PIDS+=($!)
+
+echo -e "\n${BOLD}${GREEN}===================================================================${NC}"
+echo -e "${BOLD}${GREEN}  ✨ All Microservices Running Successfully!                       ${NC}"
+echo -e "${BOLD}${GREEN}===================================================================${NC}"
+echo -e "  🌐 ${BOLD}Frontend UI:${NC}         http://localhost:5173"
+echo -e "  🚪 ${BOLD}API Gateway REST:${NC}    http://localhost:8080"
+echo -e "  🩺 ${BOLD}Gateway Health:${NC}      http://localhost:8080/health"
+echo -e "  🔒 ${BOLD}Accounts gRPC:${NC}       localhost:50051 (Service Auth Enforced)"
+echo -e "  💳 ${BOLD}Subscriptions gRPC:${NC}  localhost:50052 (Service Auth Enforced)"
+echo -e "${BOLD}${GREEN}===================================================================${NC}"
+echo -e "Press ${BOLD}Ctrl+C${NC} to stop all services.\n"
+
+# Wait for background processes
+wait

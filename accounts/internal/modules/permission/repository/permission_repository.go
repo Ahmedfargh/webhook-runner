@@ -70,7 +70,15 @@ func (r *permissionRepository) Update(ctx context.Context, permission *models.Pe
 }
 
 func (r *permissionRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&models.Permission{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("DELETE FROM admin_has_permission WHERE permission_id = ?", id).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec("DELETE FROM role_has_permission WHERE permission_id = ?", id).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&models.Permission{}, "id = ?", id).Error
+	})
 }
 
 func (r *permissionRepository) List(ctx context.Context, page, pageSize int, search string) ([]models.Permission, int64, error) {

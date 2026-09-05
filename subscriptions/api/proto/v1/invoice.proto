@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package subscriptions.v1;
+
+option go_package = "subscriptions/api/proto/v1;subscriptionsv1";
+
+message InvoiceItemResponse {
+  string id = 1;
+  string description = 2;
+  int32 quantity = 3;
+  double unit_price = 4;
+  double total = 5;
+}
+
+message InvoiceResponse {
+  string id = 1;
+  string invoice_number = 2;
+  string subscription_id = 3;
+  string user_id = 4;
+  double amount = 5;
+  double tax = 6;
+  double total_amount = 7;
+  string currency = 8;
+  string status = 9; // draft, unpaid, paid, void, overdue
+  string due_date = 10;
+  string paid_at = 11;
+  string payment_method = 12;
+  string payment_reference = 13;
+  string bank_account_instructions = 14;
+  string notes = 15;
+  repeated InvoiceItemResponse items = 16;
+  string created_at = 17;
+  string updated_at = 18;
+}
+
+message CreateInvoiceItemInput {
+  string description = 1;
+  int32 quantity = 2;
+  double unit_price = 3;
+}
+
+message CreateManualInvoiceRequest {
+  string user_id = 1;
+  string subscription_id = 2;
+  double amount = 3;
+  double tax = 4;
+  string currency = 5;
+  string due_date = 6;
+  string notes = 7;
+  string bank_account_instructions = 8;
+  repeated CreateInvoiceItemInput items = 9;
+}
+
+message GetInvoiceRequest {
+  string id = 1;
+}
+
+message ListInvoicesRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string user_id = 3; // optional filter by user
+  string status = 4; // optional filter by status
+  string search = 5;
+}
+
+message ListInvoicesResponse {
+  repeated InvoiceResponse invoices = 1;
+  int64 total_items = 2;
+  int32 current_page = 3;
+  int32 total_pages = 4;
+}
+
+message MarkInvoicePaidRequest {
+  string invoice_id = 1;
+  string payment_reference = 2;
+  string payment_method = 3;
+  string admin_notes = 4;
+  string admin_id = 5;
+}
+
+message VoidInvoiceRequest {
+  string invoice_id = 1;
+  string reason = 2;
+}
+
+message VoidInvoiceResponse {
+  bool success = 1;
+  string message = 2;
+  InvoiceResponse invoice = 3;
+}
+
+service InvoiceService {
+  rpc CreateManualInvoice(CreateManualInvoiceRequest) returns (InvoiceResponse);
+  rpc GetInvoice(GetInvoiceRequest) returns (InvoiceResponse);
+  rpc ListInvoices(ListInvoicesRequest) returns (ListInvoicesResponse);
+  rpc MarkInvoicePaid(MarkInvoicePaidRequest) returns (InvoiceResponse);
+  rpc VoidInvoice(VoidInvoiceRequest) returns (VoidInvoiceResponse);
+}

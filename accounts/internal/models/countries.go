@@ -13,7 +13,7 @@ type LocaleName struct {
 }
 
 type Country struct {
-	ID          uuid.UUID  `gorm:"type:uuid;primaryKey;" json:"id"`
+	ID          uuid.UUID  `gorm:"type:char(36);primaryKey;" json:"id"`
 	Name        LocaleName `gorm:"serializer:json;type:json;not null" json:"name"`
 	CountryCode string     `gorm:"type:varchar(10);uniqueIndex;not null" json:"country_code"`
 	CreatedAt   time.Time  `json:"created_at"`

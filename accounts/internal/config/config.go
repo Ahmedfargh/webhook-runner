@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
+
+	"accounts/internal/models"
+	"accounts/internal/seeders"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
@@ -28,10 +32,49 @@ func ConnectDB() {
 	)
 
 	var err error
-	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+	maxRetries := 15
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+		if err == nil {
+			if sqlDB, err := DB.DB(); err == nil {
+				if pingErr := sqlDB.Ping(); pingErr == nil {
+					sqlDB.SetMaxOpenConns(200)
+					sqlDB.SetMaxIdleConns(100)
+					log.Println("Accounts database connection established successfully")
+
+					// 1. Auto-migrate all accounts tables
+					if err := DB.AutoMigrate(
+						&models.Admin{},
+						&models.User{},
+						&models.Country{},
+						&models.Role{},
+						&models.Permission{},
+					); err != nil {
+						log.Fatalf("Failed to auto-migrate accounts tables: %v", err)
+					}
+					log.Println("Accounts database tables auto-migrated successfully")
+
+					// 2. Auto-seed initial reference data if tables are empty
+					seeders.SeedCountriesFromFile(DB)
+					if err := seeders.SeedPermissionsFromFile(DB); err != nil {
+						log.Printf("Warning: Permissions seeding: %v\n", err)
+					}
+					if err := seeders.SeedRolesFromFile(DB, "roles.json"); err != nil {
+						log.Printf("Warning: Roles seeding: %v\n", err)
+					}
+					if err := seeders.SeedAdminsFromFile(DB, "admins.json"); err != nil {
+						log.Printf("Warning: Admin seeding: %v\n", err)
+					}
+
+					return
+				}
+			}
+		}
+
+		log.Printf("Waiting for database connection at %s:%s (attempt %d/%d): %v\n",
+			os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), attempt, maxRetries, err)
+		time.Sleep(2 * time.Second)
 	}
 
-	log.Println("Database connection established successfully")
+	log.Fatalf("Failed to connect to database after %d attempts: %v", maxRetries, err)
 }

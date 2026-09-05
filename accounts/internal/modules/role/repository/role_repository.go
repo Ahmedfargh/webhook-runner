@@ -71,7 +71,19 @@ func (r *roleRepository) Update(ctx context.Context, role *models.Role) error {
 }
 
 func (r *roleRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Select("Permissions").Delete(&models.Role{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var role models.Role
+		role.ID = id
+		_ = tx.Model(&role).Association("Admins").Clear()
+		_ = tx.Model(&role).Association("Permissions").Clear()
+		if err := tx.Exec("DELETE FROM admin_has_role WHERE role_id = ?", id).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec("DELETE FROM role_has_permission WHERE role_id = ?", id).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&models.Role{}, "id = ?", id).Error
+	})
 }
 
 func (r *roleRepository) List(ctx context.Context, page, pageSize int, search string) ([]models.Role, int64, error) {

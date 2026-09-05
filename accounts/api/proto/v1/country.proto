@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package accounts.v1;
+
+import "common.proto";
+
+option go_package = "accounts/api/proto/v1;accountsv1";
+
+service CountryService {
+  rpc ListCountries(ListCountriesRequest) returns (ListCountriesResponse);
+  rpc GetCountry(GetCountryRequest) returns (CountryResponse);
+}
+
+message ListCountriesRequest {
+  string search = 1;
+}
+
+message ListCountriesResponse {
+  repeated CountryResponse countries = 1;
+}
+
+message GetCountryRequest {
+  string id = 1;
+  string country_code = 2;
+}

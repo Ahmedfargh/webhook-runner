@@ -1,0 +1,472 @@
+<mxfile host="app.diagrams.net" modified="2026-09-05T23:37:00.000Z" agent="Antigravity" version="21.6.8" type="device">
+  
+  <!-- ========================================================================= -->
+  <!-- TAB 1: SYSTEM OVERVIEW & INTER-SERVICE COMMUNICATION MESH                 -->
+  <!-- ========================================================================= -->
+  <diagram id="tab_overview" name="1. System Overview &amp; Mesh">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="ov_title" value="&lt;b style='font-size:22px; color:#ffffff;'&gt;SYSTEM OVERVIEW: WEBHOOK &amp;amp; SUBSCRIPTION PLATFORM&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:12px; color:#94a3b8;'&gt;Global Microservice Mesh, Protocol Boundaries, Cryptographic Secrets, and Database Links&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f172a;strokeColor=#1e293b;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="2080" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- FRONTEND BOX -->
+        <mxCell id="ov_fe" value="&lt;b style='font-size:15px; color:#1e40af;'&gt;CLIENT FRONTEND (Vue 3 / Vite - Port 5173)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#bfdbfe;rounded=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="600" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_fe_details" value="&lt;b style='color:#1e3a8a;'&gt;Key Responsibilities &amp;amp; Components:&lt;/b&gt;&lt;hr/&gt;• &lt;b&gt;Public Views:&lt;/b&gt; PlansView.vue, LoginView.vue, RegisterView.vue&lt;br/&gt;• &lt;b&gt;User Views:&lt;/b&gt; MySubscriptionView.vue, InvoicesView.vue&lt;br/&gt;• &lt;b&gt;Admin Views:&lt;/b&gt; AdminBillingView.vue, UsersView, AdminsView, RolesView&lt;br/&gt;• &lt;b&gt;Security:&lt;/b&gt; Stores JWT in localStorage, enforces router guard &amp;amp; hides admin sidebar links&lt;br/&gt;• &lt;b&gt;Axios Layer:&lt;/b&gt; Automatically injects &lt;i&gt;Authorization: Bearer &amp;lt;JWT&amp;gt;&lt;/i&gt; on every request" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#93c5fd;align=left;spacing=8;fontSize=11;" vertex="1" parent="ov_fe">
+          <mxGeometry x="20" y="45" width="560" height="350" as="geometry" />
+        </mxCell>
+
+        <!-- API GATEWAY BOX -->
+        <mxCell id="ov_gw" value="&lt;b style='font-size:15px; color:#065f46;'&gt;API GATEWAY (Go / Gin - Port 8080)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#a7f3d0;rounded=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="720" y="140" width="650" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_gw_details" value="&lt;b style='color:#064e3b;'&gt;Key Responsibilities &amp;amp; Routing Engine:&lt;/b&gt;&lt;hr/&gt;• &lt;b&gt;Entrypoint:&lt;/b&gt; Single public entry for all frontend REST API traffic&lt;br/&gt;• &lt;b&gt;JWT Termination:&lt;/b&gt; Validates Bearer token &amp;amp; extracts userID, userEmail, userRole&lt;br/&gt;• &lt;b&gt;gRPC Translation:&lt;/b&gt; Converts incoming JSON payloads into high-speed Protobuf RPCs&lt;br/&gt;• &lt;b&gt;Service Metadata Injection:&lt;/b&gt; Injects &lt;i&gt;X-Service-Name: api-gateway&lt;/i&gt; &amp;amp; &lt;i&gt;Bearer AUTH_TOKEN&lt;/i&gt;&lt;br/&gt;• &lt;b&gt;Error Normalization:&lt;/b&gt; Maps gRPC codes (NotFound, PermissionDenied) to standard HTTP 4xx/5xx" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6ee7b7;align=left;spacing=8;fontSize=11;" vertex="1" parent="ov_gw">
+          <mxGeometry x="20" y="45" width="610" height="350" as="geometry" />
+        </mxCell>
+
+        <!-- ACCOUNTS GRPC BOX -->
+        <mxCell id="ov_acc" value="&lt;b style='font-size:14px; color:#7c2d12;'&gt;ACCOUNTS SERVICE (gRPC Port 50051)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fed7aa;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="140" width="670" height="195" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_acc_details" value="• &lt;b&gt;User &amp;amp; Admin Modules:&lt;/b&gt; Registration, bcrypt hashing, profile lookups&lt;br/&gt;• &lt;b&gt;RBAC Engine:&lt;/b&gt; Roles, fine-grained permission tokens, country registry&lt;br/&gt;• &lt;b&gt;Database:&lt;/b&gt; MySQL &lt;i&gt;webhook_accounts&lt;/i&gt; (Pool: 200 MaxOpen, 100 MaxIdle)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fdba74;align=left;spacing=8;fontSize=11;" vertex="1" parent="ov_acc">
+          <mxGeometry x="20" y="35" width="630" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- SUBSCRIPTIONS GRPC BOX -->
+        <mxCell id="ov_sub" value="&lt;b style='font-size:14px; color:#581c87;'&gt;SUBSCRIPTIONS SERVICE (gRPC Port 50052)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#e9d5ff;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="365" width="670" height="195" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_sub_details" value="• &lt;b&gt;Plans CRUD:&lt;/b&gt; Tier pricing, webhooks quota, monthly events limit, features JSON&lt;br/&gt;• &lt;b&gt;Subscriptions Lifecycle:&lt;/b&gt; Subscribe, auto-provision free, cancel, admin override&lt;br/&gt;• &lt;b&gt;Invoicing &amp;amp; Offline Payments:&lt;/b&gt; Auto-invoicing, wire proof approval queue &amp;amp; auto-activation&lt;br/&gt;• &lt;b&gt;Database:&lt;/b&gt; MySQL &lt;i&gt;webhook_subscriptions&lt;/i&gt; (Pool: 200 MaxOpen, 100 MaxIdle)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8b4fe;align=left;spacing=8;fontSize=11;" vertex="1" parent="ov_sub">
+          <mxGeometry x="20" y="35" width="630" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- EDGES -->
+        <mxCell id="ov_edge1" value="&lt;b&gt;HTTP REST / JSON&lt;/b&gt;&lt;br/&gt;Bearer JWT" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563eb;strokeWidth=2;fontColor=#1e40af;" edge="1" parent="1" source="ov_fe" target="ov_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_edge2" value="&lt;b&gt;gRPC (Protobuf)&lt;/b&gt;&lt;br/&gt;Service Auth Headers" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#ea580c;strokeWidth=2;fontColor=#9a3412;" edge="1" parent="1" source="ov_gw" target="ov_acc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_edge3" value="&lt;b&gt;gRPC (Protobuf)&lt;/b&gt;&lt;br/&gt;Service Auth Headers" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7e22ce;strokeWidth=2;fontColor=#6b21a8;" edge="1" parent="1" source="ov_gw" target="ov_sub">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- SECURITY CALLOUT BANNER -->
+        <mxCell id="ov_sec_box" value="&lt;b style='font-size:14px;'&gt;SECURITY &amp;amp; ZERO-TRUST BOUNDARY PRINCIPLES:&lt;/b&gt;&lt;hr/&gt;1. &lt;b&gt;End-User Isolation:&lt;/b&gt; End-users and frontend clients NEVER connect directly to gRPC ports or MySQL databases.&lt;br/&gt;2. &lt;b&gt;Caller Whitelisting:&lt;/b&gt; Both Accounts and Subscriptions gRPC services enforce an incoming &lt;i&gt;X-Service-Name&lt;/i&gt; whitelist (&lt;code&gt;ALLOWED_SERVICES=api-gateway,webhook-runner&lt;/code&gt;). Unidentified calls are rejected.&lt;br/&gt;3. &lt;b&gt;Shared Cryptographic Secret:&lt;/b&gt; Every inter-service gRPC call passes a pre-shared 256-bit &lt;i&gt;AUTH_TOKEN&lt;/i&gt; in gRPC context metadata." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f172a;strokeColor=#1e293b;align=left;spacing=12;fontSize=11;fontColor=#f8fafc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="590" width="2080" height="100" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: COMPLETE DATABASE ERD (ENTITY-RELATIONSHIP DIAGRAM)                -->
+  <!-- ========================================================================= -->
+  <diagram id="tab_erd" name="2. Complete Database ERD">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="erd_title" value="&lt;b style='font-size:22px; color:#ffffff;'&gt;COMPLETE DATABASE ENTITY-RELATIONSHIP DIAGRAM (ERD)&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:12px; color:#94a3b8;'&gt;MySQL Schemas: webhook_accounts (Auth &amp;amp; RBAC) and webhook_subscriptions (Billing, Plans &amp;amp; Invoicing)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;strokeColor=#0f172a;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="2300" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- SCHEMA 1: ACCOUNTS -->
+        <mxCell id="erd_acc_group" value="&lt;b style='font-size:15px; color:#7c2d12;'&gt;DATABASE 1: webhook_accounts (Authentication &amp;amp; RBAC)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fed7aa;rounded=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="1120" height="600" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_countries" value="&lt;b&gt;countries&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;id:&lt;/b&gt; UUID [PK]&lt;br/&gt;+ &lt;b&gt;name:&lt;/b&gt; VARCHAR(100)&lt;br/&gt;+ &lt;b&gt;country_code:&lt;/b&gt; VARCHAR(5) [INDEX]&lt;br/&gt;+ &lt;b&gt;phone_code:&lt;/b&gt; VARCHAR(10)&lt;br/&gt;+ &lt;b&gt;created_at, updated_at&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fb923c;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_acc_group">
+          <mxGeometry x="30" y="50" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_users" value="&lt;b&gt;users&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;id:&lt;/b&gt; UUID [PK]&lt;br/&gt;+ &lt;b&gt;name:&lt;/b&gt; VARCHAR(255)&lt;br/&gt;+ &lt;b&gt;email:&lt;/b&gt; VARCHAR(191) [UNIQUE]&lt;br/&gt;+ &lt;b&gt;phone:&lt;/b&gt; VARCHAR(50)&lt;br/&gt;+ &lt;b&gt;password:&lt;/b&gt; VARCHAR(255) [HASH]&lt;br/&gt;+ &lt;b&gt;country_id:&lt;/b&gt; UUID [FK &amp;rarr; countries.id]&lt;br/&gt;+ &lt;b&gt;created_at, updated_at, deleted_at&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fb923c;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_acc_group">
+          <mxGeometry x="320" y="50" width="280" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_admins" value="&lt;b&gt;admins&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;id:&lt;/b&gt; UUID [PK]&lt;br/&gt;+ &lt;b&gt;name:&lt;/b&gt; VARCHAR(255)&lt;br/&gt;+ &lt;b&gt;email:&lt;/b&gt; VARCHAR(191) [UNIQUE]&lt;br/&gt;+ &lt;b&gt;phone:&lt;/b&gt; VARCHAR(50)&lt;br/&gt;+ &lt;b&gt;password:&lt;/b&gt; VARCHAR(255) [HASH]&lt;br/&gt;+ &lt;b&gt;is_super_admin:&lt;/b&gt; BOOLEAN&lt;br/&gt;+ &lt;b&gt;created_at, updated_at, deleted_at&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fb923c;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_acc_group">
+          <mxGeometry x="650" y="50" width="280" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_admin_roles" value="&lt;b&gt;admin_roles (Join)&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;admin_id:&lt;/b&gt; UUID [PK, FK &amp;rarr; admins.id]&lt;br/&gt;+ &lt;b&gt;role_id:&lt;/b&gt; UUID [PK, FK &amp;rarr; roles.id]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#f97316;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_acc_group">
+          <mxGeometry x="650" y="270" width="280" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_roles" value="&lt;b&gt;roles&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;id:&lt;/b&gt; UUID [PK]&lt;br/&gt;+ &lt;b&gt;name:&lt;/b&gt; VARCHAR(100) [UNIQUE]&lt;br/&gt;+ &lt;b&gt;description:&lt;/b&gt; TEXT&lt;br/&gt;+ &lt;b&gt;is_system:&lt;/b&gt; BOOLEAN&lt;br/&gt;+ &lt;b&gt;created_at, updated_at&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fb923c;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_acc_group">
+          <mxGeometry x="320" y="270" width="280" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_role_permissions" value="&lt;b&gt;role_permissions (Join)&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;role_id:&lt;/b&gt; UUID [PK, FK &amp;rarr; roles.id]&lt;br/&gt;+ &lt;b&gt;permission_id:&lt;/b&gt; UUID [PK, FK &amp;rarr; permissions.id]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#f97316;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_acc_group">
+          <mxGeometry x="320" y="450" width="280" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_permissions" value="&lt;b&gt;permissions&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;id:&lt;/b&gt; UUID [PK]&lt;br/&gt;+ &lt;b&gt;name:&lt;/b&gt; VARCHAR(100) [UNIQUE]&lt;br/&gt;+ &lt;b&gt;resource:&lt;/b&gt; VARCHAR(50)&lt;br/&gt;+ &lt;b&gt;action:&lt;/b&gt; VARCHAR(50)&lt;br/&gt;+ &lt;b&gt;created_at, updated_at&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fb923c;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_acc_group">
+          <mxGeometry x="650" y="440" width="280" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- SCHEMA 2: SUBSCRIPTIONS -->
+        <mxCell id="erd_sub_group" value="&lt;b style='font-size:15px; color:#581c87;'&gt;DATABASE 2: webhook_subscriptions (Plans, Subscriptions &amp;amp; Ledger)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#e9d5ff;rounded=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="140" width="1140" height="600" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_plans" value="&lt;b&gt;plans&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;id:&lt;/b&gt; UUID [PK]&lt;br/&gt;+ &lt;b&gt;code:&lt;/b&gt; VARCHAR(50) [UNIQUE]&lt;br/&gt;+ &lt;b&gt;name:&lt;/b&gt; VARCHAR(100)&lt;br/&gt;+ &lt;b&gt;description:&lt;/b&gt; TEXT&lt;br/&gt;+ &lt;b&gt;price_monthly:&lt;/b&gt; DECIMAL(10,2)&lt;br/&gt;+ &lt;b&gt;price_annually:&lt;/b&gt; DECIMAL(10,2)&lt;br/&gt;+ &lt;b&gt;currency:&lt;/b&gt; VARCHAR(10)&lt;br/&gt;+ &lt;b&gt;max_webhooks:&lt;/b&gt; INT (-1=inf)&lt;br/&gt;+ &lt;b&gt;max_events_per_month:&lt;/b&gt; BIGINT&lt;br/&gt;+ &lt;b&gt;max_team_members:&lt;/b&gt; INT&lt;br/&gt;+ &lt;b&gt;features:&lt;/b&gt; JSON&lt;br/&gt;+ &lt;b&gt;is_active, is_popular:&lt;/b&gt; BOOLEAN&lt;br/&gt;+ &lt;b&gt;tier_level:&lt;/b&gt; INT&lt;br/&gt;+ &lt;b&gt;created_at, updated_at&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c084fc;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_sub_group">
+          <mxGeometry x="30" y="50" width="280" height="260" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_subscriptions" value="&lt;b&gt;subscriptions&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;id:&lt;/b&gt; UUID [PK]&lt;br/&gt;+ &lt;b&gt;user_id:&lt;/b&gt; UUID [INDEX]&lt;br/&gt;+ &lt;b&gt;plan_id:&lt;/b&gt; UUID [FK &amp;rarr; plans.id]&lt;br/&gt;+ &lt;b&gt;status:&lt;/b&gt; VARCHAR(50) (active, pending, canceled)&lt;br/&gt;+ &lt;b&gt;billing_cycle:&lt;/b&gt; VARCHAR(20) (monthly, annually)&lt;br/&gt;+ &lt;b&gt;current_period_start:&lt;/b&gt; DATETIME&lt;br/&gt;+ &lt;b&gt;current_period_end:&lt;/b&gt; DATETIME&lt;br/&gt;+ &lt;b&gt;cancel_at_period_end:&lt;/b&gt; BOOLEAN&lt;br/&gt;+ &lt;b&gt;custom_notes:&lt;/b&gt; TEXT&lt;br/&gt;+ &lt;b&gt;created_at, updated_at&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c084fc;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_sub_group">
+          <mxGeometry x="370" y="50" width="320" height="220" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_invoices" value="&lt;b&gt;invoices&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;id:&lt;/b&gt; UUID [PK]&lt;br/&gt;+ &lt;b&gt;invoice_number:&lt;/b&gt; VARCHAR(50) [UNIQUE]&lt;br/&gt;+ &lt;b&gt;user_id:&lt;/b&gt; UUID [INDEX]&lt;br/&gt;+ &lt;b&gt;subscription_id:&lt;/b&gt; UUID [FK &amp;rarr; subscriptions.id]&lt;br/&gt;+ &lt;b&gt;amount:&lt;/b&gt; DECIMAL(10,2)&lt;br/&gt;+ &lt;b&gt;tax:&lt;/b&gt; DECIMAL(10,2)&lt;br/&gt;+ &lt;b&gt;total_amount:&lt;/b&gt; DECIMAL(10,2)&lt;br/&gt;+ &lt;b&gt;currency:&lt;/b&gt; VARCHAR(10)&lt;br/&gt;+ &lt;b&gt;status:&lt;/b&gt; VARCHAR(50) (unpaid, paid, void)&lt;br/&gt;+ &lt;b&gt;due_date:&lt;/b&gt; DATETIME&lt;br/&gt;+ &lt;b&gt;paid_at:&lt;/b&gt; DATETIME&lt;br/&gt;+ &lt;b&gt;bank_account_instructions:&lt;/b&gt; TEXT&lt;br/&gt;+ &lt;b&gt;created_at, updated_at&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c084fc;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_sub_group">
+          <mxGeometry x="750" y="50" width="340" height="260" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_invoice_items" value="&lt;b&gt;invoice_items&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;id:&lt;/b&gt; UUID [PK]&lt;br/&gt;+ &lt;b&gt;invoice_id:&lt;/b&gt; UUID [FK &amp;rarr; invoices.id]&lt;br/&gt;+ &lt;b&gt;description:&lt;/b&gt; VARCHAR(255)&lt;br/&gt;+ &lt;b&gt;quantity:&lt;/b&gt; INT&lt;br/&gt;+ &lt;b&gt;unit_price:&lt;/b&gt; DECIMAL(10,2)&lt;br/&gt;+ &lt;b&gt;total:&lt;/b&gt; DECIMAL(10,2)&lt;br/&gt;+ &lt;b&gt;created_at, updated_at&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c084fc;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_sub_group">
+          <mxGeometry x="750" y="370" width="340" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_manual_payments" value="&lt;b&gt;manual_payment_records&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;id:&lt;/b&gt; UUID [PK]&lt;br/&gt;+ &lt;b&gt;invoice_id:&lt;/b&gt; UUID [FK &amp;rarr; invoices.id]&lt;br/&gt;+ &lt;b&gt;user_id:&lt;/b&gt; UUID [INDEX]&lt;br/&gt;+ &lt;b&gt;amount:&lt;/b&gt; DECIMAL(10,2)&lt;br/&gt;+ &lt;b&gt;currency:&lt;/b&gt; VARCHAR(10)&lt;br/&gt;+ &lt;b&gt;transaction_reference:&lt;/b&gt; VARCHAR(100)&lt;br/&gt;+ &lt;b&gt;payer_name:&lt;/b&gt; VARCHAR(255)&lt;br/&gt;+ &lt;b&gt;payer_notes:&lt;/b&gt; TEXT&lt;br/&gt;+ &lt;b&gt;status:&lt;/b&gt; VARCHAR(50) (submitted, approved, rejected)&lt;br/&gt;+ &lt;b&gt;admin_notes:&lt;/b&gt; TEXT&lt;br/&gt;+ &lt;b&gt;created_at, updated_at&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c084fc;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_sub_group">
+          <mxGeometry x="370" y="320" width="320" height="240" as="geometry" />
+        </mxCell>
+
+        <!-- ERD RELATIONSHIPS -->
+        <mxCell id="rel1" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#ea580c;strokeWidth=2;fontColor=#ea580c;" edge="1" parent="erd_acc_group" source="tbl_countries" target="tbl_users">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel2" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#ea580c;strokeWidth=2;fontColor=#ea580c;" edge="1" parent="erd_acc_group" source="tbl_admins" target="tbl_admin_roles">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel3" value="N : 1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#ea580c;strokeWidth=2;fontColor=#ea580c;" edge="1" parent="erd_acc_group" source="tbl_admin_roles" target="tbl_roles">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel4" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#ea580c;strokeWidth=2;fontColor=#ea580c;" edge="1" parent="erd_acc_group" source="tbl_roles" target="tbl_role_permissions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel5" value="N : 1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#ea580c;strokeWidth=2;fontColor=#ea580c;" edge="1" parent="erd_acc_group" source="tbl_role_permissions" target="tbl_permissions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rel6" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9333ea;strokeWidth=2;fontColor=#9333ea;" edge="1" parent="erd_sub_group" source="tbl_plans" target="tbl_subscriptions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel7" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9333ea;strokeWidth=2;fontColor=#9333ea;" edge="1" parent="erd_sub_group" source="tbl_subscriptions" target="tbl_invoices">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel8" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9333ea;strokeWidth=2;fontColor=#9333ea;" edge="1" parent="erd_sub_group" source="tbl_invoices" target="tbl_invoice_items">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel9" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9333ea;strokeWidth=2;fontColor=#9333ea;" edge="1" parent="erd_sub_group" source="tbl_invoices" target="tbl_manual_payments">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 3: GO STRUCTS & CLASS DIAGRAM                                         -->
+  <!-- ========================================================================= -->
+  <diagram id="tab_class" name="3. Go Structs &amp; Class Diagram">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="cls_title" value="&lt;b style='font-size:22px; color:#ffffff;'&gt;GO STRUCTS, INTERFACES &amp;amp; CLASS ARCHITECTURE&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:12px; color:#94a3b8;'&gt;Clean Architecture Layering: Controllers &amp;rarr; Service Interfaces &amp;rarr; Repository Interfaces &amp;rarr; Models &amp;amp; GORM Entities&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;strokeColor=#0f172a;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="2300" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- SUBSCRIPTIONS SERVICE INTERFACES -->
+        <mxCell id="cls_sub_grp" value="&lt;b style='font-size:15px; color:#581c87;'&gt;Subscriptions Microservice (Clean Architecture)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#e9d5ff;rounded=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="1120" height="640" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iface_plan_svc" value="&lt;b&gt;&amp;laquo;interface&amp;raquo; PlanService&lt;/b&gt;&lt;hr/&gt;+ CreatePlan(ctx, input) (*Plan, error)&lt;br/&gt;+ UpdatePlan(ctx, input) (*Plan, error)&lt;br/&gt;+ DeletePlan(ctx, id) error&lt;br/&gt;+ GetPlan(ctx, id) (*Plan, error)&lt;br/&gt;+ ListPlans(ctx, includeInactive) ([]Plan, error)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c084fc;align=left;spacing=6;fontSize=11;" vertex="1" parent="cls_sub_grp">
+          <mxGeometry x="20" y="45" width="340" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iface_plan_repo" value="&lt;b&gt;&amp;laquo;interface&amp;raquo; PlanRepository&lt;/b&gt;&lt;hr/&gt;+ Create(ctx, plan) error&lt;br/&gt;+ Update(ctx, plan) error&lt;br/&gt;+ Delete(ctx, id) error&lt;br/&gt;+ FindByID(ctx, id) (*Plan, error)&lt;br/&gt;+ FindByCode(ctx, code) (*Plan, error)&lt;br/&gt;+ List(ctx, includeInactive) ([]Plan, error)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c084fc;align=left;spacing=6;fontSize=11;" vertex="1" parent="cls_sub_grp">
+          <mxGeometry x="20" y="210" width="340" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iface_sub_svc" value="&lt;b&gt;&amp;laquo;interface&amp;raquo; SubscriptionService&lt;/b&gt;&lt;hr/&gt;+ Subscribe(ctx, input) (*SubscribeResult, error)&lt;br/&gt;+ GetUserSubscription(ctx, userID) (*Subscription, error)&lt;br/&gt;+ CancelSubscription(ctx, userID, reason, imm) (*Subscription, error)&lt;br/&gt;+ AdminOverrideSubscription(ctx, input) (*Subscription, error)&lt;br/&gt;+ ListSubscriptions(ctx, page, size, status, search) ([]Subscription, int64, error)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c084fc;align=left;spacing=6;fontSize=11;" vertex="1" parent="cls_sub_grp">
+          <mxGeometry x="390" y="45" width="350" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iface_sub_repo" value="&lt;b&gt;&amp;laquo;interface&amp;raquo; SubscriptionRepository&lt;/b&gt;&lt;hr/&gt;+ Create(ctx, sub) error&lt;br/&gt;+ Update(ctx, sub) error&lt;br/&gt;+ FindByUserID(ctx, userID) (*Subscription, error)&lt;br/&gt;+ FindByID(ctx, id) (*Subscription, error)&lt;br/&gt;+ List(ctx, page, size, status, search) ([]Subscription, int64, error)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c084fc;align=left;spacing=6;fontSize=11;" vertex="1" parent="cls_sub_grp">
+          <mxGeometry x="390" y="210" width="350" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iface_inv_svc" value="&lt;b&gt;&amp;laquo;interface&amp;raquo; InvoiceService&lt;/b&gt;&lt;hr/&gt;+ CreateSubscriptionInvoice(ctx, sub, plan, cycle) (*Invoice, error)&lt;br/&gt;+ CreateManualInvoice(ctx, input) (*Invoice, error)&lt;br/&gt;+ MarkInvoicePaid(ctx, id, ref, method, notes, adminID) error&lt;br/&gt;+ VoidInvoice(ctx, id, reason) (*Invoice, error)&lt;br/&gt;+ ListInvoices(ctx, page, size, userID, status, search) ([]Invoice, int64, error)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c084fc;align=left;spacing=6;fontSize=11;" vertex="1" parent="cls_sub_grp">
+          <mxGeometry x="760" y="45" width="340" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iface_pay_svc" value="&lt;b&gt;&amp;laquo;interface&amp;raquo; ManualPaymentService&lt;/b&gt;&lt;hr/&gt;+ SubmitManualPayment(ctx, input) (*ManualPaymentRecord, error)&lt;br/&gt;+ ReviewPayment(ctx, id, approve, notes, adminID) (*ManualPaymentRecord, error)&lt;br/&gt;+ ListPayments(ctx, page, size, status, search) ([]ManualPaymentRecord, int64, error)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c084fc;align=left;spacing=6;fontSize=11;" vertex="1" parent="cls_sub_grp">
+          <mxGeometry x="760" y="210" width="340" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cls_models_sub" value="&lt;b&gt;Domain Entities &amp;amp; GORM Structs&lt;/b&gt;&lt;hr/&gt;• &lt;b&gt;models.Plan:&lt;/b&gt; ID, Code, Name, PriceMonthly, PriceAnnually, MaxWebhooks, MaxEvents, Features, IsActive, IsPopular&lt;br/&gt;• &lt;b&gt;models.Subscription:&lt;/b&gt; ID, UserID, PlanID, Plan, Status, BillingCycle, PeriodStart, PeriodEnd, CancelAtPeriodEnd&lt;br/&gt;• &lt;b&gt;models.Invoice:&lt;/b&gt; ID, InvoiceNumber, UserID, TotalAmount, Status, DueDate, PaidAt, Items, BankInstructions&lt;br/&gt;• &lt;b&gt;models.ManualPaymentRecord:&lt;/b&gt; ID, InvoiceID, UserID, Amount, TransactionReference, PayerName, Status, AdminNotes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c084fc;align=left;spacing=8;fontSize=11;" vertex="1" parent="cls_sub_grp">
+          <mxGeometry x="20" y="380" width="1080" height="230" as="geometry" />
+        </mxCell>
+
+        <!-- ACCOUNTS SERVICE INTERFACES -->
+        <mxCell id="cls_acc_grp" value="&lt;b style='font-size:15px; color:#7c2d12;'&gt;Accounts Microservice (Clean Architecture)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fed7aa;rounded=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="140" width="1140" height="640" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iface_usr_svc" value="&lt;b&gt;&amp;laquo;interface&amp;raquo; UserService&lt;/b&gt;&lt;hr/&gt;+ CreateUser(ctx, input) (*User, error)&lt;br/&gt;+ GetUser(ctx, id) (*User, error)&lt;br/&gt;+ UpdateUser(ctx, id, input) (*User, error)&lt;br/&gt;+ DeleteUser(ctx, id) error&lt;br/&gt;+ ListUsers(ctx, page, size, search) ([]User, int64, error)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fb923c;align=left;spacing=6;fontSize=11;" vertex="1" parent="cls_acc_grp">
+          <mxGeometry x="20" y="45" width="340" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iface_usr_repo" value="&lt;b&gt;&amp;laquo;interface&amp;raquo; UserRepository&lt;/b&gt;&lt;hr/&gt;+ Create(ctx, user) error&lt;br/&gt;+ FindByID(ctx, id) (*User, error)&lt;br/&gt;+ FindByEmail(ctx, email) (*User, error)&lt;br/&gt;+ Update(ctx, user) error&lt;br/&gt;+ Delete(ctx, id) error&lt;br/&gt;+ List(ctx, page, size, search) ([]User, int64, error)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fb923c;align=left;spacing=6;fontSize=11;" vertex="1" parent="cls_acc_grp">
+          <mxGeometry x="20" y="210" width="340" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iface_adm_svc" value="&lt;b&gt;&amp;laquo;interface&amp;raquo; AdminService&lt;/b&gt;&lt;hr/&gt;+ CreateAdmin(ctx, input) (*Admin, error)&lt;br/&gt;+ GetAdmin(ctx, id) (*Admin, error)&lt;br/&gt;+ AssignRoles(ctx, adminID, roleIDs) error&lt;br/&gt;+ AssignPermissions(ctx, adminID, permIDs) error&lt;br/&gt;+ ListAdmins(ctx, page, size, search) ([]Admin, int64, error)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fb923c;align=left;spacing=6;fontSize=11;" vertex="1" parent="cls_acc_grp">
+          <mxGeometry x="390" y="45" width="350" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iface_adm_repo" value="&lt;b&gt;&amp;laquo;interface&amp;raquo; AdminRepository&lt;/b&gt;&lt;hr/&gt;+ Create(ctx, admin) error&lt;br/&gt;+ FindByID(ctx, id) (*Admin, error)&lt;br/&gt;+ FindByEmail(ctx, email) (*Admin, error)&lt;br/&gt;+ AssignRoles(ctx, adminID, roleIDs) error&lt;br/&gt;+ AssignPermissions(ctx, adminID, permIDs) error&lt;br/&gt;+ List(ctx, page, size, search) ([]Admin, int64, error)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fb923c;align=left;spacing=6;fontSize=11;" vertex="1" parent="cls_acc_grp">
+          <mxGeometry x="390" y="210" width="350" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iface_role_svc" value="&lt;b&gt;&amp;laquo;interface&amp;raquo; RoleService&lt;/b&gt;&lt;hr/&gt;+ CreateRole(ctx, input) (*Role, error)&lt;br/&gt;+ AssignPermissions(ctx, roleID, permIDs) error&lt;br/&gt;+ ListRoles(ctx, page, size) ([]Role, int64, error)&lt;br/&gt;+ DeleteRole(ctx, id) error" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fb923c;align=left;spacing=6;fontSize=11;" vertex="1" parent="cls_acc_grp">
+          <mxGeometry x="760" y="45" width="350" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iface_perm_svc" value="&lt;b&gt;&amp;laquo;interface&amp;raquo; PermissionService&lt;/b&gt;&lt;hr/&gt;+ CreatePermission(ctx, input) (*Permission, error)&lt;br/&gt;+ ListPermissions(ctx, page, size) ([]Permission, int64, error)&lt;br/&gt;+ DeletePermission(ctx, id) error" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fb923c;align=left;spacing=6;fontSize=11;" vertex="1" parent="cls_acc_grp">
+          <mxGeometry x="760" y="210" width="350" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cls_models_acc" value="&lt;b&gt;Domain Entities &amp;amp; GORM Structs&lt;/b&gt;&lt;hr/&gt;• &lt;b&gt;models.User:&lt;/b&gt; ID, Name, Email, Phone, Password (Hashed), CountryID, Country, CreatedAt, UpdatedAt&lt;br/&gt;• &lt;b&gt;models.Admin:&lt;/b&gt; ID, Name, Email, Phone, Password, IsSuperAdmin, Roles, Permissions, CreatedAt&lt;br/&gt;• &lt;b&gt;models.Role:&lt;/b&gt; ID, Name, Description, IsSystem, Permissions, CreatedAt, UpdatedAt&lt;br/&gt;• &lt;b&gt;models.Permission:&lt;/b&gt; ID, Name, Resource, Action, CreatedAt, UpdatedAt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fb923c;align=left;spacing=8;fontSize=11;" vertex="1" parent="cls_acc_grp">
+          <mxGeometry x="20" y="380" width="1090" height="230" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 4: PACKAGE ARCHITECTURE DIAGRAM                                       -->
+  <!-- ========================================================================= -->
+  <diagram id="tab_package" name="4. Package Architecture">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="pkg_title" value="&lt;b style='font-size:22px; color:#ffffff;'&gt;GO &amp;amp; VUE PACKAGE ARCHITECTURE &amp;amp; IMPORT HIERARCHY&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:12px; color:#94a3b8;'&gt;Clean Layered Boundaries: cmd &amp;rarr; internal/handlers/controllers &amp;rarr; internal/modules &amp;rarr; internal/models &amp;rarr; pkg&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;strokeColor=#0f172a;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="2300" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- PKG 1: API GATEWAY -->
+        <mxCell id="pkg_gw" value="&lt;b style='font-size:14px; color:#065f46;'&gt;Package: webhookApiGateway&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#a7f3d0;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="720" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="pkg_gw_content" value="&lt;b&gt;Directory &amp;amp; Package Hierarchy:&lt;/b&gt;&lt;hr/&gt;📁 &lt;b&gt;cmd/server/&lt;/b&gt; (package main) &amp;rarr; Initializes config, clients, router, starts HTTP srv&lt;br/&gt;📁 &lt;b&gt;internal/config/&lt;/b&gt; (package config) &amp;rarr; Loads .env &amp;amp; system environment&lt;br/&gt;📁 &lt;b&gt;internal/clients/&lt;/b&gt; (package clients) &amp;rarr; AccountsClient &amp;amp; SubscriptionsClient dialers&lt;br/&gt;📁 &lt;b&gt;internal/middleware/&lt;/b&gt; (package middleware) &amp;rarr; CORSMiddleware, JWTAuthMiddleware, ErrorMapper&lt;br/&gt;📁 &lt;b&gt;internal/handlers/&lt;/b&gt; (package handlers) &amp;rarr; REST controllers (auth, plan, sub, invoice, manual_payment, users, admins, roles, perms)&lt;br/&gt;📁 &lt;b&gt;api/proto/&lt;/b&gt; (generated pb.go stubs) &amp;rarr; accounts.pb.go, subscriptions.pb.go, invoice.pb.go" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6ee7b7;align=left;spacing=8;fontSize=11;" vertex="1" parent="pkg_gw">
+          <mxGeometry x="20" y="40" width="680" height="530" as="geometry" />
+        </mxCell>
+
+        <!-- PKG 2: SUBSCRIPTIONS -->
+        <mxCell id="pkg_sub" value="&lt;b style='font-size:14px; color:#581c87;'&gt;Package: subscriptions&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#e9d5ff;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="800" y="140" width="750" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="pkg_sub_content" value="&lt;b&gt;Directory &amp;amp; Package Hierarchy:&lt;/b&gt;&lt;hr/&gt;📁 &lt;b&gt;cmd/server/&lt;/b&gt; (package main) &amp;rarr; gRPC server bootstrap &amp;amp; dependency injection&lt;br/&gt;📁 &lt;b&gt;internal/config/&lt;/b&gt; (package config) &amp;rarr; ConnectDB, GORM pool (200/100), AutoMigrate&lt;br/&gt;📁 &lt;b&gt;internal/middleware/&lt;/b&gt; (package middleware) &amp;rarr; ServiceAuthInterceptor (whitelist &amp;amp; token check)&lt;br/&gt;📁 &lt;b&gt;internal/models/&lt;/b&gt; (package models) &amp;rarr; Plan, Subscription, Invoice, InvoiceItem, ManualPaymentRecord&lt;br/&gt;📁 &lt;b&gt;internal/modules/plan/&lt;/b&gt; (controller, service, repository, presenter)&lt;br/&gt;📁 &lt;b&gt;internal/modules/subscription/&lt;/b&gt; (controller, service, repository, presenter)&lt;br/&gt;📁 &lt;b&gt;internal/modules/invoice/&lt;/b&gt; (controller, service, repository, presenter)&lt;br/&gt;📁 &lt;b&gt;internal/modules/manual_payment/&lt;/b&gt; (controller, service, repository, presenter)&lt;br/&gt;📁 &lt;b&gt;internal/pkg/apperrors/&lt;/b&gt; (Sentinel error types: ErrNotFound, ErrInvalidArgument, etc.)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8b4fe;align=left;spacing=8;fontSize=11;" vertex="1" parent="pkg_sub">
+          <mxGeometry x="20" y="40" width="710" height="530" as="geometry" />
+        </mxCell>
+
+        <!-- PKG 3: ACCOUNTS -->
+        <mxCell id="pkg_acc" value="&lt;b style='font-size:14px; color:#7c2d12;'&gt;Package: accounts&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fed7aa;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="1590" y="140" width="750" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="pkg_acc_content" value="&lt;b&gt;Directory &amp;amp; Package Hierarchy:&lt;/b&gt;&lt;hr/&gt;📁 &lt;b&gt;cmd/server/&lt;/b&gt; (package main) &amp;rarr; gRPC server bootstrap listening on 50051&lt;br/&gt;📁 &lt;b&gt;internal/config/&lt;/b&gt; (package config) &amp;rarr; ConnectDB, GORM pool (200/100), AutoMigrate&lt;br/&gt;📁 &lt;b&gt;internal/middleware/&lt;/b&gt; (package middleware) &amp;rarr; ServiceAuthInterceptor&lt;br/&gt;📁 &lt;b&gt;internal/models/&lt;/b&gt; (package models) &amp;rarr; User, Admin, Role, Permission, Country&lt;br/&gt;📁 &lt;b&gt;internal/modules/user/&lt;/b&gt; (controller, service, repository, presenter)&lt;br/&gt;📁 &lt;b&gt;internal/modules/admin/&lt;/b&gt; (controller, service, repository, presenter)&lt;br/&gt;📁 &lt;b&gt;internal/modules/role/&lt;/b&gt; (controller, service, repository, presenter)&lt;br/&gt;📁 &lt;b&gt;internal/modules/permission/&lt;/b&gt; (controller, service, repository, presenter)&lt;br/&gt;📁 &lt;b&gt;internal/modules/country/&lt;/b&gt; (controller, service, repository, presenter)&lt;br/&gt;📁 &lt;b&gt;internal/helpers/phonenumbers/&lt;/b&gt; (E.164 normalization)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fdba74;align=left;spacing=8;fontSize=11;" vertex="1" parent="pkg_acc">
+          <mxGeometry x="20" y="40" width="710" height="530" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 5: API GATEWAY DETAILED ARCHITECTURE                                  -->
+  <!-- ========================================================================= -->
+  <diagram id="tab_gateway" name="5. API Gateway (Port 8080)">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="gw_title" value="&lt;b style='font-size:22px; color:#ffffff;'&gt;API GATEWAY SERVICE (Port 8080) - COMPONENT &amp;amp; ROUTE SPECIFICATION&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:12px; color:#94a3b8;'&gt;HTTP Routing, JWT Validation, gRPC Client Adapters, and Context Injection&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#064e3b;strokeColor=#022c22;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="2080" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- SERVER BOOTSTRAP -->
+        <mxCell id="gw_boot" value="&lt;b style='font-size:14px; color:#065f46;'&gt;1. Server Entry &amp;amp; Config (cmd/server/main.go)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#a7f3d0;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="640" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="gw_boot_text" value="• &lt;b&gt;config.LoadConfig():&lt;/b&gt; Reads PORT (8080), JWT_SECRET, SERVICE_TOKEN, ACCOUNTS_GRPC_PORT (50051), SUBSCRIPTIONS_GRPC_PORT (50052)&lt;br/&gt;• &lt;b&gt;clients.NewAccountsClient():&lt;/b&gt; Dials localhost:50051 with gRPC keepalive &amp;amp; service auth credentials&lt;br/&gt;• &lt;b&gt;clients.NewSubscriptionsClient():&lt;/b&gt; Dials localhost:50052 with gRPC keepalive &amp;amp; service auth credentials&lt;br/&gt;• &lt;b&gt;HTTP Server Settings:&lt;/b&gt; ReadTimeout: 15s, WriteTimeout: 15s, IdleTimeout: 60s, Graceful Shutdown (SIGINT/SIGTERM)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6ee7b7;align=left;spacing=8;fontSize=11;" vertex="1" parent="gw_boot">
+          <mxGeometry x="15" y="35" width="610" height="210" as="geometry" />
+        </mxCell>
+
+        <!-- MIDDLEWARE STACK -->
+        <mxCell id="gw_mid" value="&lt;b style='font-size:14px; color:#065f46;'&gt;2. Middleware Pipeline (internal/middleware/)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#a7f3d0;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="720" y="140" width="680" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="gw_mid_text" value="• &lt;b&gt;cors.go (CORSMiddleware):&lt;/b&gt; Manages Access-Control-Allow-Origin (*, localhost:5173), Methods (GET, POST, PUT, DELETE, OPTIONS), Headers (Authorization, Content-Type)&lt;br/&gt;• &lt;b&gt;jwt_auth.go (JWTAuthMiddleware):&lt;/b&gt; Parses Bearer &amp;lt;token&amp;gt;, validates HMAC-SHA256 signature, sets `userID`, `user_id`, `userEmail`, `userRole` into Gin context&lt;br/&gt;• &lt;b&gt;error_mapper.go (HandleGRPCError):&lt;/b&gt; Inspects gRPC status codes:&lt;br/&gt;  - NotFound &amp;rarr; HTTP 404 | InvalidArgument &amp;rarr; HTTP 400 | Unauthenticated &amp;rarr; HTTP 401&lt;br/&gt;  - PermissionDenied &amp;rarr; HTTP 403 | AlreadyExists &amp;rarr; HTTP 409 | Internal/Unavailable &amp;rarr; HTTP 500/503" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6ee7b7;align=left;spacing=8;fontSize=11;" vertex="1" parent="gw_mid">
+          <mxGeometry x="15" y="35" width="650" height="210" as="geometry" />
+        </mxCell>
+
+        <!-- REST ENDPOINTS DIRECTORY -->
+        <mxCell id="gw_routes" value="&lt;b style='font-size:14px; color:#065f46;'&gt;3. REST Endpoints &amp;amp; Handler Mappings (internal/handlers/)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#a7f3d0;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="40" y="430" width="2080" height="350" as="geometry" />
+        </mxCell>
+        <mxCell id="gw_r1" value="&lt;b&gt;Auth &amp;amp; Profile (auth_handler.go)&lt;/b&gt;&lt;hr/&gt;• POST /api/v1/auth/login&lt;br/&gt;• POST /api/v1/auth/register&lt;br/&gt;• GET /api/v1/auth/me (Protected)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6ee7b7;align=left;spacing=6;fontSize=11;" vertex="1" parent="gw_routes">
+          <mxGeometry x="20" y="40" width="370" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="gw_r2" value="&lt;b&gt;Plans Management (plan_handler.go)&lt;/b&gt;&lt;hr/&gt;• GET /api/v1/plans (Public)&lt;br/&gt;• GET /api/v1/plans/:id (Public)&lt;br/&gt;• POST /api/v1/admin/plans (Admin)&lt;br/&gt;• PUT /api/v1/admin/plans/:id (Admin)&lt;br/&gt;• DELETE /api/v1/admin/plans/:id (Admin)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6ee7b7;align=left;spacing=6;fontSize=11;" vertex="1" parent="gw_routes">
+          <mxGeometry x="410" y="40" width="390" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="gw_r3" value="&lt;b&gt;Subscriptions (subscription_handler.go)&lt;/b&gt;&lt;hr/&gt;• GET /api/v1/subscriptions/current (User)&lt;br/&gt;• POST /api/v1/subscriptions/subscribe (User)&lt;br/&gt;• POST /api/v1/subscriptions/cancel (User)&lt;br/&gt;• GET /api/v1/subscriptions/admin/all (Admin)&lt;br/&gt;• POST /api/v1/subscriptions/admin/override (Admin)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6ee7b7;align=left;spacing=6;fontSize=11;" vertex="1" parent="gw_routes">
+          <mxGeometry x="820" y="40" width="410" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="gw_r4" value="&lt;b&gt;Invoices (invoice_handler.go)&lt;/b&gt;&lt;hr/&gt;• GET /api/v1/invoices (User ledger)&lt;br/&gt;• GET /api/v1/invoices/:id (Details)&lt;br/&gt;• GET /api/v1/invoices/admin/all (Admin)&lt;br/&gt;• POST /api/v1/invoices/admin/create (Admin)&lt;br/&gt;• POST /api/v1/invoices/admin/:id/mark-paid&lt;br/&gt;• POST /api/v1/invoices/admin/:id/void" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6ee7b7;align=left;spacing=6;fontSize=11;" vertex="1" parent="gw_routes">
+          <mxGeometry x="1250" y="40" width="390" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="gw_r5" value="&lt;b&gt;Offline Payments (manual_payment_handler.go)&lt;/b&gt;&lt;hr/&gt;• POST /api/v1/manual-payments (Submit Proof)&lt;br/&gt;• GET /api/v1/manual-payments/admin/all (Queue)&lt;br/&gt;• POST /api/v1/manual-payments/admin/:id/review" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6ee7b7;align=left;spacing=6;fontSize=11;" vertex="1" parent="gw_routes">
+          <mxGeometry x="1660" y="40" width="400" height="120" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 6: SUBSCRIPTIONS & INVOICING SERVICE                                  -->
+  <!-- ========================================================================= -->
+  <diagram id="tab_subscriptions" name="6. Subscriptions Service (Port 50052)">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="sub_title" value="&lt;b style='font-size:22px; color:#ffffff;'&gt;SUBSCRIPTIONS &amp;amp; INVOICING GRPC SERVICE (Port 50052) - ARCHITECTURE &amp;amp; LIFECYCLE&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:12px; color:#94a3b8;'&gt;Plans CRUD, Quotas, Subscriptions State Machine, Auto-Invoicing, and Offline Wire Transfer Queue&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#581c87;strokeColor=#2e1065;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="2080" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 1: PLANS CRUD -->
+        <mxCell id="sub_plan_box" value="&lt;b style='font-size:14px; color:#581c87;'&gt;1. Plan Module (internal/modules/plan/)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#e9d5ff;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="500" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="sub_plan_text" value="• &lt;b&gt;CreatePlan / UpdatePlan:&lt;/b&gt; Validates pricing (monthly/annual), slug code uniqueness, max_webhooks (-1=unlimited), max_events_per_month, max_team_members, tier_level, is_active, is_popular.&lt;br/&gt;• &lt;b&gt;ListPlans:&lt;/b&gt; Supports `include_inactive` filter for admin console.&lt;br/&gt;• &lt;b&gt;DeletePlan:&lt;/b&gt; Soft-deletes tier from `plans` table." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8b4fe;align=left;spacing=8;fontSize=11;" vertex="1" parent="sub_plan_box">
+          <mxGeometry x="15" y="35" width="470" height="260" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 2: SUBSCRIPTIONS LIFECYCLE -->
+        <mxCell id="sub_sub_box" value="&lt;b style='font-size:14px; color:#581c87;'&gt;2. Subscription Module (internal/modules/subscription/)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#e9d5ff;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="560" y="140" width="510" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="sub_sub_text" value="• &lt;b&gt;Subscribe:&lt;/b&gt; If plan is Free &amp;rarr; sets status `STATUS_ACTIVE` immediately. If paid &amp;rarr; sets `STATUS_PENDING_MANUAL_PAYMENT` and invokes `invoice_service` to generate an unpaid invoice.&lt;br/&gt;• &lt;b&gt;GetUserSubscription:&lt;/b&gt; Auto-provisions free tier if no record exists yet.&lt;br/&gt;• &lt;b&gt;CancelSubscription:&lt;/b&gt; Supports `immediately=true` (cancels now) or `cancel_at_period_end=true` (remains active until renewal).&lt;br/&gt;• &lt;b&gt;AdminOverrideSubscription:&lt;/b&gt; Modifies tier, status, renewal dates, and notes." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8b4fe;align=left;spacing=8;fontSize=11;" vertex="1" parent="sub_sub_box">
+          <mxGeometry x="15" y="35" width="480" height="260" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 3: INVOICES -->
+        <mxCell id="sub_inv_box" value="&lt;b style='font-size:14px; color:#581c87;'&gt;3. Invoice Module (internal/modules/invoice/)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#e9d5ff;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="140" width="500" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="sub_inv_text" value="• &lt;b&gt;CreateSubscriptionInvoice:&lt;/b&gt; Computes monthly or annual rate with VAT/tax, formats unique Invoice Number (e.g. `INV-2026-0905-XXXX`), and injects bank wire IBAN/SWIFT instructions.&lt;br/&gt;• &lt;b&gt;CreateManualInvoice:&lt;/b&gt; Custom line items issued by Admin.&lt;br/&gt;• &lt;b&gt;MarkInvoicePaid:&lt;/b&gt; Sets status `STATUS_PAID` &amp;amp; transitions subscription to active.&lt;br/&gt;• &lt;b&gt;VoidInvoice:&lt;/b&gt; Marks unpaid invoice as `STATUS_VOID`." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8b4fe;align=left;spacing=8;fontSize=11;" vertex="1" parent="sub_inv_box">
+          <mxGeometry x="15" y="35" width="470" height="260" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 4: MANUAL PAYMENTS -->
+        <mxCell id="sub_pay_box" value="&lt;b style='font-size:14px; color:#581c87;'&gt;4. Manual Payment Module (manual_payment/)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#e9d5ff;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="1610" y="140" width="510" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="sub_pay_text" value="• &lt;b&gt;SubmitManualPayment:&lt;/b&gt; User submits bank wire reference number, payer name, and notes. Creates record with status `STATUS_SUBMITTED`.&lt;br/&gt;• &lt;b&gt;ListManualPayments:&lt;/b&gt; Admin approval queue with search &amp;amp; filter.&lt;br/&gt;• &lt;b&gt;ReviewManualPayment:&lt;/b&gt;&lt;br/&gt;  - If `approve=true` &amp;rarr; sets status `STATUS_APPROVED`, updates invoice to `PAID`, and automatically upgrades subscription to `ACTIVE`.&lt;br/&gt;  - If `approve=false` &amp;rarr; sets status `STATUS_REJECTED` with reason." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8b4fe;align=left;spacing=8;fontSize=11;" vertex="1" parent="sub_pay_box">
+          <mxGeometry x="15" y="35" width="480" height="260" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 7: ACCOUNTS GRPC SERVICE                                              -->
+  <!-- ========================================================================= -->
+  <diagram id="tab_accounts" name="7. Accounts Service (Port 50051)">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="acc_title" value="&lt;b style='font-size:22px; color:#ffffff;'&gt;ACCOUNTS GRPC SERVICE (Port 50051) - MODULES &amp;amp; SECURITY&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:12px; color:#94a3b8;'&gt;gRPC Interceptors, Password Cryptography, Permission Matrix, and MySQL Schema&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7c2d12;strokeColor=#431407;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="2080" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- GRPC INTERCEPTOR & AUTH -->
+        <mxCell id="acc_interceptor" value="&lt;b style='font-size:14px; color:#7c2d12;'&gt;1. Security Interceptor (internal/middleware/service_auth.go)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fed7aa;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="660" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="acc_interceptor_text" value="• &lt;b&gt;UnaryServerInterceptor:&lt;/b&gt; Intercepts all incoming gRPC method calls before reaching controllers.&lt;br/&gt;• &lt;b&gt;Header Checks:&lt;/b&gt;&lt;br/&gt;  1. Reads `X-Service-Name` from metadata. Matches against `ALLOWED_SERVICES` (&lt;i&gt;api-gateway,webhook-runner&lt;/i&gt;). If absent or unknown &amp;rarr; &lt;b&gt;codes.PermissionDenied&lt;/b&gt;.&lt;br/&gt;  2. Reads `Authorization: Bearer &amp;lt;AUTH_TOKEN&amp;gt;`. Compares against environment secret. If mismatch &amp;rarr; &lt;b&gt;codes.Unauthenticated&lt;/b&gt;.&lt;br/&gt;• Ensures that direct rogue network calls cannot execute user operations or queries." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fdba74;align=left;spacing=8;fontSize=11;" vertex="1" parent="acc_interceptor">
+          <mxGeometry x="15" y="35" width="630" height="230" as="geometry" />
+        </mxCell>
+
+        <!-- MODULES BREAKDOWN -->
+        <mxCell id="acc_mods" value="&lt;b style='font-size:14px; color:#7c2d12;'&gt;2. Internal Domain Modules (internal/modules/)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fed7aa;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="740" y="140" width="1380" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="acc_m1" value="&lt;b&gt;user/ Module&lt;/b&gt;&lt;hr/&gt;• &lt;b&gt;controller:&lt;/b&gt; Implements UserServer gRPC&lt;br/&gt;• &lt;b&gt;service:&lt;/b&gt; Hashes password with bcrypt.GenerateFromPassword (Cost: 10)&lt;br/&gt;• &lt;b&gt;repository:&lt;/b&gt; GORM CRUD operations on `users` table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fdba74;align=left;spacing=6;fontSize=11;" vertex="1" parent="acc_mods">
+          <mxGeometry x="20" y="40" width="310" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="acc_m2" value="&lt;b&gt;admin/ Module&lt;/b&gt;&lt;hr/&gt;• &lt;b&gt;controller:&lt;/b&gt; Implements AdminServer gRPC&lt;br/&gt;• &lt;b&gt;service:&lt;/b&gt; Handles admin provisioning &amp;amp; AssignRoles / AssignPermissions&lt;br/&gt;• &lt;b&gt;repository:&lt;/b&gt; Joins with `admin_roles` and `permissions`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fdba74;align=left;spacing=6;fontSize=11;" vertex="1" parent="acc_mods">
+          <mxGeometry x="350" y="40" width="310" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="acc_m3" value="&lt;b&gt;role/ &amp;amp; permission/ Modules&lt;/b&gt;&lt;hr/&gt;• &lt;b&gt;role:&lt;/b&gt; Defines standard &amp;amp; custom roles (e.g. administrator, support_agent)&lt;br/&gt;• &lt;b&gt;permission:&lt;/b&gt; Defines atomic capabilities (users.read, plans.create)&lt;br/&gt;• &lt;b&gt;matrix:&lt;/b&gt; Updates `role_permissions` join table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fdba74;align=left;spacing=6;fontSize=11;" vertex="1" parent="acc_mods">
+          <mxGeometry x="680" y="40" width="330" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="acc_m4" value="&lt;b&gt;country/ Module&lt;/b&gt;&lt;hr/&gt;• &lt;b&gt;controller:&lt;/b&gt; CountryServer gRPC&lt;br/&gt;• &lt;b&gt;service:&lt;/b&gt; Lists ISO countries, phone dial codes (+1, +20, +966)&lt;br/&gt;• &lt;b&gt;repository:&lt;/b&gt; Queries `countries` table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fdba74;align=left;spacing=6;fontSize=11;" vertex="1" parent="acc_mods">
+          <mxGeometry x="1030" y="40" width="330" height="220" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 8: VUE 3 FRONTEND & RBAC NAVIGATION ARCHITECTURE                      -->
+  <!-- ========================================================================= -->
+  <diagram id="tab_frontend" name="8. Vue 3 Frontend &amp; RBAC">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="fe_title" value="&lt;b style='font-size:22px; color:#ffffff;'&gt;VUE 3 FRONTEND ARCHITECTURE - VIEWS, STORES, ROUTER GUARDS &amp;amp; RBAC&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:12px; color:#94a3b8;'&gt;Role Separation (User vs. Admin), State Management, Axios Interceptors, and Multi-Language Localization&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e40af;strokeColor=#172554;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="2080" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ROLE COMPARISON: USER VS ADMIN -->
+        <mxCell id="fe_role_user" value="&lt;b style='font-size:14px; color:#0369a1;'&gt;USER ROLE CAPABILITIES (role: &quot;user&quot;)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f0f9ff;strokeColor=#bae6fd;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="1020" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="fe_role_user_text" value="• &lt;b&gt;Visible Navigation Menu:&lt;/b&gt; Dashboard, Plans &amp;amp; Pricing, My Subscription, Invoices &amp;amp; Ledger.&lt;br/&gt;• &lt;b&gt;Plans &amp;amp; Pricing (/plans):&lt;/b&gt; Browse available subscription tiers, toggle monthly/annual discounts, and click to order.&lt;br/&gt;• &lt;b&gt;My Subscription (/subscription):&lt;/b&gt; View active plan name, renewal date, quota consumption bars, offline wire credentials, and cancel/unsubscribe.&lt;br/&gt;• &lt;b&gt;Invoices (/invoices):&lt;/b&gt; View personal billing ledger, open printable invoices, and submit bank transfer wire reference numbers.&lt;br/&gt;• &lt;b&gt;Restricted:&lt;/b&gt; Cannot see or access Admin Console, Admins, Users, Roles, Permissions, or Topology." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7dd3fc;align=left;spacing=8;fontSize=11;" vertex="1" parent="fe_role_user">
+          <mxGeometry x="15" y="35" width="990" height="230" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fe_role_admin" value="&lt;b style='font-size:14px; color:#b91c1c;'&gt;ADMIN ROLE CAPABILITIES (role: &quot;admin&quot;)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fef2f2;strokeColor=#fecaca;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="140" width="1020" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="fe_role_admin_text" value="• &lt;b&gt;Full Core Modules:&lt;/b&gt; User Management (/users), Admin Accounts (/admins), Roles &amp;amp; Matrix (/roles), Permissions (/permissions).&lt;br/&gt;• &lt;b&gt;Admin Billing Console (/admin/billing):&lt;/b&gt;&lt;br/&gt;  - &lt;i&gt;Offline Payment Queue:&lt;/i&gt; Review submitted bank transfers, approve (auto-activates subscription), or reject.&lt;br/&gt;  - &lt;i&gt;All Invoices:&lt;/i&gt; Create manual custom invoices, mark paid, void invoices.&lt;br/&gt;  - &lt;i&gt;All Subscriptions:&lt;/i&gt; List all accounts &amp;amp; perform admin overrides on tiers, status, and renewal dates.&lt;br/&gt;  - &lt;i&gt;Plans Management (CRUD):&lt;/i&gt; Create new plans, edit pricing/quotas/features, toggle popular/active status, delete plans.&lt;br/&gt;• &lt;b&gt;System Security:&lt;/b&gt; System Topology (/topology) visualizer and live microservices ping." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fca5a5;align=left;spacing=8;fontSize=11;" vertex="1" parent="fe_role_admin">
+          <mxGeometry x="15" y="35" width="990" height="230" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+</mxfile>

@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package accounts.v1;
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "accounts/api/proto/v1;accountsv1";
+
+service PermissionService {
+  rpc CreatePermission(CreatePermissionRequest) returns (PermissionResponse);
+  rpc GetPermission(GetPermissionRequest) returns (PermissionResponse);
+  rpc UpdatePermission(UpdatePermissionRequest) returns (PermissionResponse);
+  rpc DeletePermission(DeletePermissionRequest) returns (DeletePermissionResponse);
+  rpc ListPermissions(ListPermissionsRequest) returns (ListPermissionsResponse);
+}
+
+message PermissionResponse {
+  string id = 1;
+  string name = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+message CreatePermissionRequest {
+  string name = 1;
+}
+
+message GetPermissionRequest {
+  string id = 1;
+}
+
+message UpdatePermissionRequest {
+  string id = 1;
+  string name = 2;
+}
+
+message DeletePermissionRequest {
+  string id = 1;
+}
+
+message DeletePermissionResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ListPermissionsRequest {
+  PaginationRequest pagination = 1;
+}
+
+message ListPermissionsResponse {
+  repeated PermissionResponse permissions = 1;
+  PaginationMetadata pagination = 2;
+}

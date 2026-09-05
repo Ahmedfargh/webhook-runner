@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package subscriptions.v1;
+
+option go_package = "webhookApiGateway/api/proto/subscriptions/v1;subscriptionsv1";
+
+message PlanResponse {
+  string id = 1;
+  string name = 2;
+  string code = 3;
+  string description = 4;
+  double price_monthly = 5;
+  double price_annually = 6;
+  string currency = 7;
+  int32 max_webhooks = 8;
+  int64 max_events_per_month = 9;
+  int32 max_team_members = 10;
+  repeated string features = 11;
+  bool is_active = 12;
+  bool is_popular = 13;
+  int32 tier_level = 14;
+  string created_at = 15;
+  string updated_at = 16;
+}
+
+message CreatePlanRequest {
+  string name = 1;
+  string code = 2;
+  string description = 3;
+  double price_monthly = 4;
+  double price_annually = 5;
+  string currency = 6;
+  int32 max_webhooks = 7;
+  int64 max_events_per_month = 8;
+  int32 max_team_members = 9;
+  repeated string features = 10;
+  bool is_active = 11;
+  bool is_popular = 12;
+  int32 tier_level = 13;
+}
+
+message UpdatePlanRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double price_monthly = 4;
+  double price_annually = 5;
+  string currency = 6;
+  int32 max_webhooks = 7;
+  int64 max_events_per_month = 8;
+  int32 max_team_members = 9;
+  repeated string features = 10;
+  bool is_active = 11;
+  bool is_popular = 12;
+  int32 tier_level = 13;
+}
+
+message GetPlanRequest {
+  string id = 1;
+}
+
+message DeletePlanRequest {
+  string id = 1;
+}
+
+message DeletePlanResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ListPlansRequest {
+  bool include_inactive = 1;
+}
+
+message ListPlansResponse {
+  repeated PlanResponse plans = 1;
+}
+
+service PlanService {
+  rpc CreatePlan(CreatePlanRequest) returns (PlanResponse);
+  rpc GetPlan(GetPlanRequest) returns (PlanResponse);
+  rpc UpdatePlan(UpdatePlanRequest) returns (PlanResponse);
+  rpc DeletePlan(DeletePlanRequest) returns (DeletePlanResponse);
+  rpc ListPlans(ListPlansRequest) returns (ListPlansResponse);
+}

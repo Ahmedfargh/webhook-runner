@@ -5,16 +5,15 @@ import (
 	"log"
 	"os"
 
-	"accounts/internal/config"
 	"accounts/internal/models"
 
 	"gorm.io/gorm"
 )
 
 func SeedRolesFromFile(db *gorm.DB, filePath string) error {
-	fileData, err := os.ReadFile(config.PROJECT_PATH + "/internal/seeders/" + filePath)
+	fileData, err := os.ReadFile("internal/seeders/" + filePath)
 	if err != nil {
-		return err
+		fileData = RolesJSON
 	}
 
 	var roles []models.Role
@@ -45,6 +44,6 @@ func SeedRolesFromFile(db *gorm.DB, filePath string) error {
 		}
 	}
 
-	log.Println("Roles seeded successfully from file!")
+	log.Println("Roles seeded successfully!")
 	return nil
 }
