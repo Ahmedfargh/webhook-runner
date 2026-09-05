@@ -57,6 +57,19 @@
         </router-link>
       </template>
 
+      <!-- Apps & Webhooks Section -->
+      <div v-if="!isCollapsed" class="nav-section-title">Runner & Webhooks</div>
+
+      <router-link to="/apps" class="nav-item" active-class="nav-item-active">
+        <Boxes :size="18" />
+        <span v-if="!isCollapsed">Applications</span>
+      </router-link>
+
+      <router-link to="/webhooks/logs" class="nav-item" active-class="nav-item-active">
+        <Activity :size="18" />
+        <span v-if="!isCollapsed">Webhook Logs</span>
+      </router-link>
+
       <!-- Billing and Plans (Both Users & Admins) -->
       <div v-if="!isCollapsed" class="nav-section-title">{{ t('nav.billingAndPlans') }}</div>
 
@@ -137,6 +150,8 @@ import {
   CreditCard,
   Receipt,
   Sliders,
+  Boxes,
+  Activity,
 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()

@@ -11,22 +11,49 @@ import (
 )
 
 type HealthHandler struct {
-	client *clients.AccountsClient
-	cfg    *config.Config
+	accountsClient      *clients.AccountsClient
+	subscriptionsClient *clients.SubscriptionsClient
+	runnerClient        *clients.RunnerClient
+	cfg                 *config.Config
 }
 
-func NewHealthHandler(client *clients.AccountsClient, cfg *config.Config) *HealthHandler {
-	return &HealthHandler{client: client, cfg: cfg}
+func NewHealthHandler(
+	accountsClient *clients.AccountsClient,
+	subscriptionsClient *clients.SubscriptionsClient,
+	runnerClient *clients.RunnerClient,
+	cfg *config.Config,
+) *HealthHandler {
+	return &HealthHandler{
+		accountsClient:      accountsClient,
+		subscriptionsClient: subscriptionsClient,
+		runnerClient:        runnerClient,
+		cfg:                 cfg,
+	}
 }
 
 func (h *HealthHandler) HealthCheck(c *gin.Context) {
-	latency, err := h.client.Ping(c.Request.Context())
-
+	accLatency, accErr := h.accountsClient.Ping(c.Request.Context())
 	accountsStatus := "healthy"
-	var accountsErr string
-	if err != nil {
+	var accountsErrMsg string
+	if accErr != nil {
 		accountsStatus = "degraded"
-		accountsErr = err.Error()
+		accountsErrMsg = accErr.Error()
+	}
+
+	subLatency, subErr := h.subscriptionsClient.Ping(c.Request.Context())
+	subscriptionsStatus := "healthy"
+	var subErrMsg string
+	if subErr != nil {
+		subscriptionsStatus = "degraded"
+		subErrMsg = subErr.Error()
+	}
+
+	runLatency, runErr := h.runnerClient.Ping(c.Request.Context())
+	runnerStatus := "healthy"
+	var runErrMsg string
+	if runErr != nil {
+		runnerStatus = "degraded"
+		runErrMsg = runErr.Error()
 	}
 
 	response := gin.H{
@@ -39,8 +66,24 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 				"host":             h.cfg.AccountsGRPCHost,
 				"port":             h.cfg.AccountsGRPCPort,
 				"service_identity": h.cfg.ServiceName,
-				"latency_ms":       latency.Milliseconds(),
-				"error":            accountsErr,
+				"latency_ms":       accLatency.Milliseconds(),
+				"error":            accountsErrMsg,
+			},
+			"subscriptions_grpc": gin.H{
+				"status":           subscriptionsStatus,
+				"host":             h.cfg.SubscriptionsGRPCHost,
+				"port":             h.cfg.SubscriptionsGRPCPort,
+				"service_identity": h.cfg.ServiceName,
+				"latency_ms":       subLatency.Milliseconds(),
+				"error":            subErrMsg,
+			},
+			"runner_grpc": gin.H{
+				"status":           runnerStatus,
+				"host":             h.cfg.RunnerGRPCHost,
+				"port":             h.cfg.RunnerGRPCPort,
+				"service_identity": h.cfg.ServiceName,
+				"latency_ms":       runLatency.Milliseconds(),
+				"error":            runErrMsg,
 			},
 		},
 	}

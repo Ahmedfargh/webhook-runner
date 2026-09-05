@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package webhook_runner.v1;
+
+option go_package = "webhookRunner/api/proto/v1;webhookRunnerV1";
+
+service WebhookRunnerService {
+  rpc SendWebhook (SendWebhookRequest) returns (SendWebhookResponse);
+  rpc ListWebhookCalls (ListWebhookCallsRequest) returns (ListWebhookCallsResponse);
+  rpc GetWebhookCall (GetWebhookCallRequest) returns (GetWebhookCallResponse);
+  rpc RetryWebhookCall (RetryWebhookCallRequest) returns (RetryWebhookCallResponse);
+}
+
+message WebhookCall {
+  string id = 1;
+  string app_id = 2;
+  string app_name = 3;
+  string event_name = 4;
+  string target_url = 5;
+  string payload_json = 6;
+  string headers_json = 7;
+  int32 attempt_count = 8;
+  string status = 9;
+  int32 response_status_code = 10;
+  string response_body = 11;
+  int64 response_latency_ms = 12;
+  string error_message = 13;
+  string created_at = 14;
+  string updated_at = 15;
+}
+
+message SendWebhookRequest {
+  string app_id = 1;
+  string event_name = 2;
+  string payload_json = 3;
+  map<string, string> custom_headers = 4;
+  string target_url_override = 5;
+}
+
+message SendWebhookResponse {
+  WebhookCall webhook_call = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message ListWebhookCallsRequest {
+  string user_id = 1;
+  string app_id = 2;
+  string status = 3;
+  int32 page = 4;
+  int32 limit = 5;
+  string search = 6;
+}
+
+message ListWebhookCallsResponse {
+  repeated WebhookCall webhook_calls = 1;
+  int64 total = 2;
+  int32 page = 3;
+  int32 limit = 4;
+}
+
+message GetWebhookCallRequest {
+  string id = 1;
+  string user_id = 2;
+}
+
+message GetWebhookCallResponse {
+  WebhookCall webhook_call = 1;
+}
+
+message RetryWebhookCallRequest {
+  string id = 1;
+  string user_id = 2;
+}
+
+message RetryWebhookCallResponse {
+  WebhookCall webhook_call = 1;
+  bool success = 2;
+  string message = 3;
+}

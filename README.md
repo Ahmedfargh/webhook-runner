@@ -11,8 +11,11 @@ graph TB
     Client[Vue 3 SPA - Port 5173] -->|HTTP REST / JWT| Gateway[API Gateway - Port 8080]
     Gateway -->|gRPC / Protobuf Token Auth| Accounts[Accounts Service - Port 50051]
     Gateway -->|gRPC / Protobuf Token Auth| Subscriptions[Subscriptions Service - Port 50052]
+    Gateway -->|gRPC / Protobuf Token Auth| Runner[Webhook Runner Service - Port 50053]
     Accounts -->|TCP / GORM Pool| MySQL[(MySQL 8.0 - Port 3307 / 3306)]
     Subscriptions -->|TCP / GORM Pool| MySQL
+    Runner -->|TCP / GORM Pool| MySQL
+    Runner -->|HTTP Dispatch + HMAC| Consumers[External Destination Webhooks]
 ```
 
 ### 🧩 Services Breakdown
@@ -20,10 +23,11 @@ graph TB
 | Service | Protocol / Port | Architecture | Description |
 | :--- | :--- | :--- | :--- |
 | **`api-gateway`** | **HTTP REST / `8080`** | Clean Architecture / Gin | Public REST gateway, JWT auth middleware, inter-service gRPC client routing, and system health checks. |
+| **`webhook-runner`** | **gRPC / `50053`** | HMVC / GORM / Engine | Applications management (`App`), HMAC-SHA256 crypto signing, HTTP dispatch engine, and execution logs telemetry. |
 | **`accounts`** | **gRPC / `50051`** | HMVC / GORM | User & admin identity management, RBAC (roles & granular permissions), multi-lingual countries. |
 | **`subscriptions`** | **gRPC / `50052`** | HMVC / GORM | Tiered pricing plans (Free, Starter, Pro, Enterprise), subscriptions, invoices, and offline payment reviews. |
-| **`frontend`** | **HTTP / `5173`** | Vue 3 + Vite + Nginx | Zoho-inspired responsive UI, 6-language internationalization (AR, EN, FR, DE, RU), and role-guarded views. |
-| **`mysql`** | **TCP / `3307:3306`** | MySQL 8.0 InnoDB | Separate schemas: `webhook_accounts` and `webhook_subscriptions` with auto-migration and seeders. |
+| **`frontend`** | **HTTP / `5173`** | Vue 3 + Vite + Nginx | Zoho-inspired responsive UI, 6-language internationalization (AR, EN, FR, DE, RU), App credentials, and Webhook log traces. |
+| **`mysql`** | **TCP / `3307:3306`** | MySQL 8.0 InnoDB | Schemas: `webhook_accounts`, `webhook_subscriptions`, `webhook_runner` with auto-migration and seeders. |
 
 ---
 
@@ -73,10 +77,11 @@ Ensure you have **Go 1.22+**, **Node.js 20+**, and a running **MySQL** instance.
 | :--- | :--- | :--- |
 | **Frontend UI** | [http://localhost:5173](http://localhost:5173) | Vue 3 Web Application (Default admin: `admin@webhook.io` / `password123`) |
 | **API Gateway REST** | [http://localhost:8080](http://localhost:8080) | Base REST API root (`/api/v1`) |
-| **Gateway Health Probe** | [http://localhost:8080/health](http://localhost:8080/health) | Real-time upstream gRPC connectivity & latency diagnostic |
+| **Gateway Health Probe** | [http://localhost:8080/health](http://localhost:8080/health) | Real-time upstream gRPC connectivity & latency diagnostic (Accounts, Subscriptions, Runner) |
 | **Accounts gRPC** | `localhost:50051` | gRPC server reflection enabled (Protobuf v1) |
 | **Subscriptions gRPC** | `localhost:50052` | gRPC server reflection enabled (Protobuf v1) |
-| **MySQL Database** | `localhost:3307` | Host mapped port (Database: `webhook_accounts`, `webhook_subscriptions`) |
+| **Webhook Runner gRPC** | `localhost:50053` | gRPC server reflection enabled (Protobuf v1) |
+| **MySQL Database** | `localhost:3307` | Host mapped port (Databases: `webhook_accounts`, `webhook_subscriptions`, `webhook_runner`) |
 
 ---
 

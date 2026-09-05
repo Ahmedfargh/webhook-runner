@@ -68,7 +68,29 @@ services:
       - webhook_network
 
   # ============================================================================
-  # 4. API Gateway REST Microservice (Port 8080)
+  # 4. Webhook Runner gRPC Microservice (Port 50053)
+  # ============================================================================
+  webhook-runner:
+    build:
+      context: ./webhook-runner
+      dockerfile: Dockerfile
+    container_name: webhook_runner
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DB_NAME: ${RUNNER_DB_NAME:-webhook_runner}
+      GRPC_PORT: ${RUNNER_GRPC_PORT:-50053}
+    ports:
+      - "${RUNNER_GRPC_PORT:-50053}:50053"
+    networks:
+      - webhook_network
+
+  # ============================================================================
+  # 5. API Gateway REST Microservice (Port 8080)
   # ============================================================================
   api-gateway:
     build:
@@ -79,6 +101,7 @@ services:
     depends_on:
       - accounts
       - subscriptions
+      - webhook-runner
     env_file:
       - .env
     ports:

@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package webhook_runner.v1;
+
+option go_package = "webhookRunner/api/proto/v1;webhookRunnerV1";
+
+service AppService {
+  rpc CreateApp (CreateAppRequest) returns (CreateAppResponse);
+  rpc GetApp (GetAppRequest) returns (GetAppResponse);
+  rpc ListApps (ListAppsRequest) returns (ListAppsResponse);
+  rpc UpdateApp (UpdateAppRequest) returns (UpdateAppResponse);
+  rpc DeleteApp (DeleteAppRequest) returns (DeleteAppResponse);
+  rpc RotateSecrets (RotateSecretsRequest) returns (RotateSecretsResponse);
+}
+
+message App {
+  string id = 1;
+  string user_id = 2;
+  string name = 3;
+  string app_id = 4;
+  string app_secret = 5;
+  string webhook_url = 6;
+  string webhook_secret = 7;
+  bool is_active = 8;
+  string created_at = 9;
+  string updated_at = 10;
+}
+
+message CreateAppRequest {
+  string user_id = 1;
+  string name = 2;
+  string webhook_url = 3;
+}
+
+message CreateAppResponse {
+  App app = 1;
+}
+
+message GetAppRequest {
+  string id = 1;
+  string user_id = 2;
+  string app_id = 3;
+}
+
+message GetAppResponse {
+  App app = 1;
+}
+
+message ListAppsRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 limit = 3;
+  string search = 4;
+}
+
+message ListAppsResponse {
+  repeated App apps = 1;
+  int64 total = 2;
+  int32 page = 3;
+  int32 limit = 4;
+}
+
+message UpdateAppRequest {
+  string id = 1;
+  string user_id = 2;
+  string name = 3;
+  string webhook_url = 4;
+  bool is_active = 5;
+}
+
+message UpdateAppResponse {
+  App app = 1;
+}
+
+message DeleteAppRequest {
+  string id = 1;
+  string user_id = 2;
+}
+
+message DeleteAppResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message RotateSecretsRequest {
+  string id = 1;
+  string user_id = 2;
+  bool rotate_app_secret = 3;
+  bool rotate_webhook_secret = 4;
+}
+
+message RotateSecretsResponse {
+  App app = 1;
+}

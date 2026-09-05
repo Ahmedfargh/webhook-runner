@@ -25,9 +25,9 @@ echo -e "${BOLD}${CYAN}=========================================================
 
 # Ensure MySQL databases exist
 if command -v mysql &> /dev/null; then
-    mysql -u root -e "CREATE DATABASE IF NOT EXISTS webhook_accounts; CREATE DATABASE IF NOT EXISTS webhook_subscriptions;" 2>/dev/null || true
+    mysql -u root -e "CREATE DATABASE IF NOT EXISTS webhook_accounts; CREATE DATABASE IF NOT EXISTS webhook_subscriptions; CREATE DATABASE IF NOT EXISTS webhook_runner;" 2>/dev/null || true
 elif command -v mariadb &> /dev/null; then
-    mariadb -u root -e "CREATE DATABASE IF NOT EXISTS webhook_accounts; CREATE DATABASE IF NOT EXISTS webhook_subscriptions;" 2>/dev/null || true
+    mariadb -u root -e "CREATE DATABASE IF NOT EXISTS webhook_accounts; CREATE DATABASE IF NOT EXISTS webhook_subscriptions; CREATE DATABASE IF NOT EXISTS webhook_runner;" 2>/dev/null || true
 fi
 
 # Ensure .env files exist
@@ -59,6 +59,20 @@ ALLOWED_SERVICES=api-gateway,webhook-runner
 EOF
 fi
 
+if [ ! -f "$ROOT_DIR/webhook-runner/.env" ]; then
+    echo -e "${YELLOW}[Notice] webhook-runner/.env not found, generating default config...${NC}"
+    cat <<EOF > "$ROOT_DIR/webhook-runner/.env"
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=webhook_runner
+GRPC_PORT=50053
+AUTH_TOKEN=4f7f956f34bcfa0c9a55aff6b98c4e1d87e1da6d0d33f5021b5937123d7330c1
+ALLOWED_SERVICES=api-gateway,webhook-runner
+EOF
+fi
+
 if [ ! -f "$ROOT_DIR/api-gateway/.env" ]; then
     echo -e "${YELLOW}[Notice] api-gateway/.env not found, generating default config...${NC}"
     cat <<EOF > "$ROOT_DIR/api-gateway/.env"
@@ -67,6 +81,8 @@ ACCOUNTS_GRPC_HOST=localhost
 ACCOUNTS_GRPC_PORT=50051
 SUBSCRIPTIONS_GRPC_HOST=localhost
 SUBSCRIPTIONS_GRPC_PORT=50052
+RUNNER_GRPC_HOST=localhost
+RUNNER_GRPC_PORT=50053
 SERVICE_NAME=api-gateway
 SERVICE_TOKEN=4f7f956f34bcfa0c9a55aff6b98c4e1d87e1da6d0d33f5021b5937123d7330c1
 JWT_SECRET=api-gateway-super-secret-jwt-key-2026
@@ -99,7 +115,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM EXIT
 
 # 1. Start Accounts gRPC Service
-echo -e "${BLUE}▶ [1/4] Starting Accounts gRPC Service on port 50051...${NC}"
+echo -e "${BLUE}▶ [1/5] Starting Accounts gRPC Service on port 50051...${NC}"
 (
     cd "$ROOT_DIR/accounts"
     go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${BLUE}[Accounts gRPC]${NC}      ")/"
@@ -107,18 +123,26 @@ echo -e "${BLUE}▶ [1/4] Starting Accounts gRPC Service on port 50051...${NC}"
 PIDS+=($!)
 
 # 2. Start Subscriptions gRPC Service
-echo -e "${PURPLE}▶ [2/4] Starting Subscriptions gRPC Service on port 50052...${NC}"
+echo -e "${PURPLE}▶ [2/5] Starting Subscriptions gRPC Service on port 50052...${NC}"
 (
     cd "$ROOT_DIR/subscriptions"
     go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${PURPLE}[Subscriptions gRPC]${NC} ")/"
 ) &
 PIDS+=($!)
 
+# 3. Start Webhook Runner gRPC Service
+echo -e "${YELLOW}▶ [3/5] Starting Webhook Runner gRPC Service on port 50053...${NC}"
+(
+    cd "$ROOT_DIR/webhook-runner"
+    go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${YELLOW}[Runner gRPC]${NC}        ")/"
+) &
+PIDS+=($!)
+
 # Give gRPC servers a moment to bind ports
 sleep 1.5
 
-# 3. Start API Gateway
-echo -e "${GREEN}▶ [3/4] Starting API Gateway HTTP REST on port 8080...${NC}"
+# 4. Start API Gateway
+echo -e "${GREEN}▶ [4/5] Starting API Gateway HTTP REST on port 8080...${NC}"
 (
     cd "$ROOT_DIR/api-gateway"
     go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${GREEN}[API Gateway]${NC}        ")/ "
@@ -128,8 +152,8 @@ PIDS+=($!)
 # Give Gateway a moment to bind port
 sleep 1
 
-# 4. Start Frontend Dev Server
-echo -e "${CYAN}▶ [4/4] Starting Vue 3 Frontend (Zoho Projects UI) on port 5173...${NC}"
+# 5. Start Frontend Dev Server
+echo -e "${CYAN}▶ [5/5] Starting Vue 3 Frontend (Zoho Projects UI) on port 5173...${NC}"
 (
     cd "$ROOT_DIR/frontend"
     npm run dev -- --host 2>&1 | sed -e "s/^/$(printf "${CYAN}[Frontend UI]${NC}        ")/"
@@ -144,6 +168,7 @@ echo -e "  🚪 ${BOLD}API Gateway REST:${NC}    http://localhost:8080"
 echo -e "  🩺 ${BOLD}Gateway Health:${NC}      http://localhost:8080/health"
 echo -e "  🔒 ${BOLD}Accounts gRPC:${NC}       localhost:50051 (Service Auth Enforced)"
 echo -e "  💳 ${BOLD}Subscriptions gRPC:${NC}  localhost:50052 (Service Auth Enforced)"
+echo -e "  ⚡ ${BOLD}Webhook Runner gRPC:${NC} localhost:50053 (Service Auth Enforced)"
 echo -e "${BOLD}${GREEN}===================================================================${NC}"
 echo -e "Press ${BOLD}Ctrl+C${NC} to stop all services.\n"
 

@@ -10,6 +10,8 @@ import PlansView from '../views/PlansView.vue'
 import MySubscriptionView from '../views/MySubscriptionView.vue'
 import InvoicesView from '../views/InvoicesView.vue'
 import AdminBillingView from '../views/AdminBillingView.vue'
+import AppsView from '../views/AppsView.vue'
+import WebhookLogsView from '../views/WebhookLogsView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 
@@ -34,6 +36,16 @@ const routes = [
         path: '',
         name: 'Dashboard',
         component: DashboardView,
+      },
+      {
+        path: 'apps',
+        name: 'Apps',
+        component: AppsView,
+      },
+      {
+        path: 'webhooks/logs',
+        name: 'WebhookLogs',
+        component: WebhookLogsView,
       },
       {
         path: 'users',

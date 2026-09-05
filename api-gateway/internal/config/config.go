@@ -13,6 +13,8 @@ type Config struct {
 	AccountsGRPCPort      string
 	SubscriptionsGRPCHost string
 	SubscriptionsGRPCPort string
+	RunnerGRPCHost        string
+	RunnerGRPCPort        string
 	ServiceName           string
 	ServiceToken          string
 	JWTSecret             string
@@ -34,6 +36,8 @@ func LoadConfig() *Config {
 	accountsPort := getEnv("ACCOUNTS_GRPC_PORT", "50051")
 	subscriptionsHost := getEnv("SUBSCRIPTIONS_GRPC_HOST", "localhost")
 	subscriptionsPort := getEnv("SUBSCRIPTIONS_GRPC_PORT", "50052")
+	runnerHost := getEnv("RUNNER_GRPC_HOST", "localhost")
+	runnerPort := getEnv("RUNNER_GRPC_PORT", "50053")
 	serviceName := getEnv("SERVICE_NAME", "api-gateway")
 	serviceToken := getEnv("SERVICE_TOKEN", "4f7f956f34bcfa0c9a55aff6b98c4e1d87e1da6d0d33f5021b5937123d7330c1")
 	jwtSecret := getEnv("JWT_SECRET", "api-gateway-super-secret-jwt-key-2026")
@@ -51,6 +55,8 @@ func LoadConfig() *Config {
 		AccountsGRPCPort:      accountsPort,
 		SubscriptionsGRPCHost: subscriptionsHost,
 		SubscriptionsGRPCPort: subscriptionsPort,
+		RunnerGRPCHost:        runnerHost,
+		RunnerGRPCPort:        runnerPort,
 		ServiceName:           serviceName,
 		ServiceToken:          serviceToken,
 		JWTSecret:             jwtSecret,
