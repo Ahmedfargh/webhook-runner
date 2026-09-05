@@ -125,7 +125,7 @@ func (h *WebhookHandler) ListWebhookCalls(c *gin.Context) {
 
 	role := c.GetString("user_role")
 	filterUserID := userID
-	if role == "admin" && c.Query("all") == "true" {
+	if role == "admin" || appID != "" {
 		filterUserID = ""
 	}
 

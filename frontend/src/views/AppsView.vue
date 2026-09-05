@@ -571,11 +571,12 @@ import {
   Edit3,
   Trash2,
   Zap,
-  ShieldCheck,
   CheckCircle2,
   AlertCircle,
   FileText,
   User as UserIcon,
+  Activity,
+  ChevronDown,
 } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -843,6 +844,146 @@ async function executeTestDispatch() {
     toastStore.error(err.response?.data?.error || 'Failed to dispatch webhook.')
   } finally {
     sending.value = false
+  }
+}
+
+// App Webhook Logs Modal States
+const isLogsModalOpen = ref(false)
+const activeLogsApp = ref(null)
+const appLogs = ref([])
+const logsLoading = ref(false)
+const logsSearch = ref('')
+const logsStatusFilter = ref('')
+const expandedCallId = ref(null)
+const retryingCallId = ref(null)
+
+const appLogsStats = computed(() => {
+  const list = appLogs.value || []
+  const total = list.length
+  if (total === 0) return { total: 0, successRate: 100, avgLatency: 0 }
+  const successCount = list.filter(
+    (c) => c.status === 'SUCCESS' || c.status === 'success' || (c.response_status_code >= 200 && c.response_status_code < 400)
+  ).length
+  const successRate = Math.round((successCount / total) * 100)
+  const totalLatency = list.reduce((acc, c) => acc + (c.latency_ms || c.latencyMs || c.response_latency_ms || 0), 0)
+  const avgLatency = Math.round(totalLatency / total)
+  return { total, successRate, avgLatency }
+})
+
+const filteredAppLogs = computed(() => {
+  let list = appLogs.value || []
+  if (logsStatusFilter.value) {
+    list = list.filter((c) => c.status === logsStatusFilter.value || c.status?.toLowerCase() === logsStatusFilter.value.toLowerCase())
+  }
+  if (logsSearch.value) {
+    const q = logsSearch.value.toLowerCase()
+    list = list.filter(
+      (c) =>
+        (c.event_name || c.eventName || '').toLowerCase().includes(q) ||
+        (c.target_url || c.targetUrl || '').toLowerCase().includes(q) ||
+        (c.id || '').toLowerCase().includes(q)
+    )
+  }
+  return list
+})
+
+async function openLogsModal(app) {
+  activeLogsApp.value = app
+  isLogsModalOpen.value = true
+  logsSearch.value = ''
+  logsStatusFilter.value = ''
+  expandedCallId.value = null
+  await fetchAppLogs()
+}
+
+function closeLogsModal() {
+  isLogsModalOpen.value = false
+  activeLogsApp.value = null
+  appLogs.value = []
+  expandedCallId.value = null
+}
+
+async function fetchAppLogs() {
+  if (!activeLogsApp.value) return
+  logsLoading.value = true
+  try {
+    const res = await webhookService.listWebhookCalls({
+      app_id: activeLogsApp.value.id || activeLogsApp.value.app_id,
+      limit: 100,
+      status: logsStatusFilter.value || undefined,
+    })
+    appLogs.value = res.data || []
+  } catch (err) {
+    toastStore.error(err.response?.data?.error || 'Failed to load app webhook logs.')
+  } finally {
+    logsLoading.value = false
+  }
+}
+
+function toggleExpandCall(id) {
+  expandedCallId.value = expandedCallId.value === id ? null : id
+}
+
+function openTestFromLogs() {
+  const app = activeLogsApp.value
+  if (!app) return
+  closeLogsModal()
+  openTestModal(app)
+}
+
+function switchToLogsModal() {
+  const app = activeApp.value
+  if (!app) return
+  closeTestModal()
+  openLogsModal(app)
+}
+
+async function retryCall(call) {
+  retryingCallId.value = call.id
+  try {
+    await webhookService.retryWebhookCall(call.id)
+    toastStore.success(t('apps.retrySuccess'))
+    await fetchAppLogs()
+  } catch (err) {
+    toastStore.error(err.response?.data?.error || 'Failed to retry webhook.')
+  } finally {
+    retryingCallId.value = null
+  }
+}
+
+function formatJson(val) {
+  if (!val) return ''
+  if (typeof val === 'object') {
+    return JSON.stringify(val, null, 2)
+  }
+  try {
+    const parsed = JSON.parse(val)
+    return JSON.stringify(parsed, null, 2)
+  } catch {
+    return val
+  }
+}
+
+function formatTime(val) {
+  if (!val) return '-'
+  const d = new Date(val)
+  return isNaN(d.getTime()) ? val : d.toLocaleString()
+}
+
+function getStatusBadgeClass(status) {
+  const s = (status || '').toUpperCase()
+  switch (s) {
+    case 'SUCCESS':
+      return 'badge-success'
+    case 'FAILED':
+      return 'badge-danger'
+    case 'TIMEOUT':
+      return 'badge-warning'
+    case 'PENDING':
+    case 'RETRYING':
+      return 'badge-info'
+    default:
+      return 'badge-secondary'
   }
 }
 
@@ -1199,5 +1340,250 @@ onMounted(async () => {
   font-size: 0.875rem;
   color: var(--text-primary);
   line-height: 1.5;
+}
+
+/* App Webhook Logs Modal Styles */
+.app-logs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.logs-app-summary-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.app-summary-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.meta-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.app-summary-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logs-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.stat-mini-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-mini-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.stat-mini-val {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.logs-filter-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.status-select {
+  width: 150px;
+}
+
+.no-logs-empty-state {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  background: #fafafa;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-color);
+}
+
+.empty-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.logs-accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.log-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.log-card:hover {
+  border-color: var(--color-primary-light);
+}
+
+.log-card-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.summary-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.log-event-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+.summary-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.latency-pill {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: #f1f5f9;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-family: monospace;
+}
+
+.expand-icon {
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.expand-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.log-card-details {
+  border-top: 1px solid var(--border-color);
+  padding: 1rem;
+  background: #fafbfc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.code-box-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  word-break: break-all;
+}
+
+.details-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.details-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.code-snippet {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem;
+  font-size: 0.725rem;
+  font-family: monospace;
+  max-height: 180px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.details-error-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+.details-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.25rem;
+}
+
+.btn-copy-xs {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0.15rem;
+  display: inline-flex;
+  align-items: center;
+}
+.btn-copy-xs:hover {
+  color: var(--color-primary);
 }
 </style>

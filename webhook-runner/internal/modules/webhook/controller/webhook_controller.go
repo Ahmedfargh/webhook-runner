@@ -40,15 +40,11 @@ func (c *WebhookController) SendWebhook(ctx context.Context, req *pb.SendWebhook
 
 func (c *WebhookController) ListWebhookCalls(ctx context.Context, req *pb.ListWebhookCallsRequest) (*pb.ListWebhookCallsResponse, error) {
 	var userID uuid.UUID
-	var appID uuid.UUID
 	if req.UserId != "" {
 		userID, _ = uuid.Parse(req.UserId)
 	}
-	if req.AppId != "" {
-		appID, _ = uuid.Parse(req.AppId)
-	}
 
-	calls, total, err := c.service.ListWebhookCalls(ctx, userID, appID, req.Status, int(req.Page), int(req.Limit), req.Search)
+	calls, total, err := c.service.ListWebhookCalls(ctx, userID, req.AppId, req.Status, int(req.Page), int(req.Limit), req.Search)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list webhook calls: %v", err)
 	}

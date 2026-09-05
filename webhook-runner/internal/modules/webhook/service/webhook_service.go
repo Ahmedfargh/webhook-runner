@@ -16,7 +16,7 @@ import (
 
 type WebhookService interface {
 	SendWebhook(ctx context.Context, appIDStr, eventName, payloadJSON string, customHeaders map[string]string, targetURLOverride string) (*models.WebhookCall, error)
-	ListWebhookCalls(ctx context.Context, userID, appID uuid.UUID, status string, page, limit int, search string) ([]models.WebhookCall, int64, error)
+	ListWebhookCalls(ctx context.Context, userID uuid.UUID, appIDStr string, status string, page, limit int, search string) ([]models.WebhookCall, int64, error)
 	GetWebhookCall(ctx context.Context, id, userID uuid.UUID) (*models.WebhookCall, error)
 	RetryWebhookCall(ctx context.Context, id, userID uuid.UUID) (*models.WebhookCall, error)
 }
@@ -118,7 +118,15 @@ func (s *webhookService) SendWebhook(ctx context.Context, appIDStr, eventName, p
 	return call, nil
 }
 
-func (s *webhookService) ListWebhookCalls(ctx context.Context, userID, appID uuid.UUID, status string, page, limit int, search string) ([]models.WebhookCall, int64, error) {
+func (s *webhookService) ListWebhookCalls(ctx context.Context, userID uuid.UUID, appIDStr string, status string, page, limit int, search string) ([]models.WebhookCall, int64, error) {
+	var appID uuid.UUID
+	if appIDStr != "" {
+		if parsed, err := uuid.Parse(appIDStr); err == nil {
+			appID = parsed
+		} else if app, err := s.appRepo.FindByAppID(appIDStr); err == nil && app != nil {
+			appID = app.ID
+		}
+	}
 	return s.repo.List(userID, appID, status, page, limit, search)
 }
 
