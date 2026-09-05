@@ -3,60 +3,60 @@
     <!-- Header -->
     <div class="view-header">
       <div>
-        <h1 class="view-title">Applications & Webhooks</h1>
-        <p class="view-subtitle">Manage client applications, configure HMAC-SHA256 signing secrets, and trigger webhook dispatches.</p>
+        <h1 class="view-title">{{ t('apps.title') }}</h1>
+        <p class="view-subtitle">{{ t('apps.subtitle') }}</p>
       </div>
 
       <div class="header-actions">
-        <button class="btn btn-secondary" @click="fetchApps" :disabled="loading">
-          <RefreshCw :size="15" :class="{ 'spin-anim': loading }" /> Refresh
+        <button class="btn btn-secondary btn-sm" @click="fetchApps" :disabled="loading">
+          <RefreshCw :size="14" :class="{ 'spin-anim': loading }" /> {{ t('common.refresh') }}
         </button>
-        <button class="btn btn-primary" @click="openCreateModal">
-          <Plus :size="15" /> Create Application
+        <button class="btn btn-primary btn-sm" @click="openCreateDrawer">
+          <Plus :size="14" /> {{ t('apps.createApp') }}
         </button>
       </div>
     </div>
 
     <!-- Stats Bar -->
-    <div class="stats-overview-grid">
-      <div class="stat-card">
+    <div class="stats-overview-grid mb-6">
+      <div class="card stat-card">
         <div class="stat-icon-wrapper blue">
           <Layers :size="22" />
         </div>
         <div class="stat-content">
           <div class="stat-value">{{ apps.length }}</div>
-          <div class="stat-label">Registered Applications</div>
+          <div class="stat-label">{{ t('apps.registeredApps') }}</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="card stat-card">
         <div class="stat-icon-wrapper green">
           <ShieldCheck :size="22" />
         </div>
         <div class="stat-content">
           <div class="stat-value">HMAC-SHA256</div>
-          <div class="stat-label">Cryptographic Signatures</div>
+          <div class="stat-label">{{ t('apps.cryptoSignatures') }}</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="card stat-card">
         <div class="stat-icon-wrapper purple">
           <Zap :size="22" />
         </div>
         <div class="stat-content">
-          <div class="stat-value">Instant Dispatch</div>
-          <div class="stat-label">High Throughput Runner</div>
+          <div class="stat-value">{{ t('apps.instantDispatch') }}</div>
+          <div class="stat-label">HTTP / gRPC Runner</div>
         </div>
       </div>
     </div>
 
-    <!-- Search & Filters -->
-    <div class="filter-bar card mb-4">
+    <!-- Search & Filter Bar -->
+    <div class="card filter-card mb-6">
       <div class="search-input-wrapper">
         <Search :size="16" class="search-icon" />
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Filter applications by name or App ID..."
-          class="form-input search-field"
+          :placeholder="t('apps.filterPlaceholder')"
+          class="form-control search-field"
         />
       </div>
     </div>
@@ -64,255 +64,280 @@
     <!-- Loading State -->
     <div v-if="loading && apps.length === 0" class="text-center py-12">
       <RefreshCw :size="28" class="spin-anim text-primary mx-auto" />
-      <p class="mt-3 text-muted">Loading applications...</p>
+      <p class="mt-3 text-muted">{{ t('common.loading') }}</p>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="filteredApps.length === 0" class="empty-state-card card">
-      <Layers :size="48" class="empty-icon text-muted" />
-      <h3 class="empty-title">No Applications Found</h3>
-      <p class="empty-subtitle">Get started by creating your first application to receive and dispatch webhooks.</p>
-      <button class="btn btn-primary mt-4" @click="openCreateModal">
-        <Plus :size="16" /> Create Application
-      </button>
-    </div>
+    <EmptyState
+      v-else-if="filteredApps.length === 0"
+      :title="t('apps.noAppsFound')"
+      :description="t('apps.noAppsSubtitle')"
+      :icon="Layers"
+    >
+      <template #action>
+        <button class="btn btn-primary btn-sm" @click="openCreateDrawer">
+          <Plus :size="14" /> {{ t('apps.createApp') }}
+        </button>
+      </template>
+    </EmptyState>
 
-    <!-- App Cards Grid -->
+    <!-- Apps Grid -->
     <div v-else class="apps-grid">
       <div v-for="app in filteredApps" :key="app.id" class="card app-card">
         <div class="app-card-header">
           <div class="app-title-area">
-            <div class="app-avatar">
+            <div class="app-avatar-circle">
               {{ getAppInitials(app.name) }}
             </div>
-            <div>
+            <div class="app-name-meta">
               <h3 class="app-name">{{ app.name }}</h3>
-              <span class="badge badge-active">Active</span>
+              <span class="badge badge-success">{{ t('common.active') }}</span>
             </div>
           </div>
-          <div class="app-card-actions">
-            <button class="btn-icon" @click="openTestWebhookModal(app)" title="Send Test Webhook">
-              <Send :size="15" />
+          <div class="action-buttons-group">
+            <button class="action-icon-btn" :title="t('apps.testWebhook')" @click="openTestModal(app)">
+              <Send :size="14" />
             </button>
-            <button class="btn-icon" @click="openEditModal(app)" title="Edit App">
-              <Edit3 :size="15" />
+            <button class="action-icon-btn" :title="t('common.edit')" @click="openEditDrawer(app)">
+              <Edit3 :size="14" />
             </button>
-            <button class="btn-icon text-danger" @click="confirmDelete(app)" title="Delete App">
-              <Trash2 :size="15" />
+            <button class="action-icon-btn text-danger" :title="t('common.delete')" @click="confirmDelete(app)">
+              <Trash2 :size="14" />
             </button>
           </div>
         </div>
 
         <div class="app-card-body">
           <!-- App ID -->
-          <div class="credential-row">
-            <span class="cred-label">App ID</span>
-            <div class="cred-value-box">
-              <code>{{ app.app_id || app.appId }}</code>
-              <button class="btn-copy" @click="copyToClipboard(app.app_id || app.appId, 'App ID')">
+          <div class="credential-field">
+            <label class="cred-label">{{ t('apps.appId') }}</label>
+            <div class="cred-box" dir="ltr">
+              <code class="cred-code">{{ app.app_id || app.appId }}</code>
+              <button class="copy-btn" @click="copyToClipboard(app.app_id || app.appId, t('apps.appId'))" :title="t('apps.appId')">
                 <Copy :size="13" />
               </button>
             </div>
           </div>
 
           <!-- App Secret -->
-          <div class="credential-row">
-            <span class="cred-label">App Secret</span>
-            <div class="cred-value-box">
-              <code>{{ isRevealed(app.id, 'app_secret') ? (app.app_secret || app.appSecret) : '••••••••••••••••••••••••••••••••' }}</code>
-              <button class="btn-copy" @click="toggleReveal(app.id, 'app_secret')">
-                <EyeOff v-if="isRevealed(app.id, 'app_secret')" :size="13" />
-                <Eye v-else :size="13" />
-              </button>
-              <button class="btn-copy" @click="copyToClipboard(app.app_secret || app.appSecret, 'App Secret')">
-                <Copy :size="13" />
-              </button>
+          <div class="credential-field">
+            <label class="cred-label">{{ t('apps.appSecret') }}</label>
+            <div class="cred-box" dir="ltr">
+              <code class="cred-code">{{ isRevealed(app.id, 'app_secret') ? (app.app_secret || app.appSecret) : '••••••••••••••••••••••••••••••••' }}</code>
+              <div class="cred-actions">
+                <button class="copy-btn" @click="toggleReveal(app.id, 'app_secret')">
+                  <EyeOff v-if="isRevealed(app.id, 'app_secret')" :size="13" />
+                  <Eye v-else :size="13" />
+                </button>
+                <button class="copy-btn" @click="copyToClipboard(app.app_secret || app.appSecret, t('apps.appSecret'))">
+                  <Copy :size="13" />
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- Webhook Secret -->
-          <div class="credential-row">
-            <span class="cred-label">HMAC Secret</span>
-            <div class="cred-value-box">
-              <code>{{ isRevealed(app.id, 'webhook_secret') ? (app.webhook_secret || app.webhookSecret) : '••••••••••••••••••••••••••••••••' }}</code>
-              <button class="btn-copy" @click="toggleReveal(app.id, 'webhook_secret')">
-                <EyeOff v-if="isRevealed(app.id, 'webhook_secret')" :size="13" />
-                <Eye v-else :size="13" />
-              </button>
-              <button class="btn-copy" @click="copyToClipboard(app.webhook_secret || app.webhookSecret, 'Webhook Secret')">
-                <Copy :size="13" />
-              </button>
+          <!-- Webhook HMAC Secret -->
+          <div class="credential-field">
+            <label class="cred-label">{{ t('apps.hmacSecret') }}</label>
+            <div class="cred-box" dir="ltr">
+              <code class="cred-code">{{ isRevealed(app.id, 'webhook_secret') ? (app.webhook_secret || app.webhookSecret) : '••••••••••••••••••••••••••••••••' }}</code>
+              <div class="cred-actions">
+                <button class="copy-btn" @click="toggleReveal(app.id, 'webhook_secret')">
+                  <EyeOff v-if="isRevealed(app.id, 'webhook_secret')" :size="13" />
+                  <Eye v-else :size="13" />
+                </button>
+                <button class="copy-btn" @click="copyToClipboard(app.webhook_secret || app.webhookSecret, t('apps.hmacSecret'))">
+                  <Copy :size="13" />
+                </button>
+              </div>
             </div>
           </div>
 
           <!-- Webhook URL -->
-          <div class="credential-row">
-            <span class="cred-label">Endpoint URL</span>
-            <div class="cred-url-box">
-              <Globe :size="14" class="text-muted" />
+          <div class="credential-field">
+            <label class="cred-label">{{ t('apps.endpointUrl') }}</label>
+            <div class="url-box" dir="ltr">
+              <Globe :size="14" class="text-muted flex-shrink-0" />
               <span class="url-text" :title="app.webhook_url || app.webhookUrl">{{ app.webhook_url || app.webhookUrl || 'Not configured' }}</span>
             </div>
           </div>
         </div>
 
         <div class="app-card-footer">
-          <button class="btn btn-sm btn-outline" @click="rotateSecrets(app)">
-            <Key :size="13" /> Rotate Secrets
+          <button class="btn btn-sm btn-secondary" @click="rotateSecrets(app)">
+            <Key :size="13" /> {{ t('apps.rotateSecrets') }}
           </button>
-          <button class="btn btn-sm btn-primary" @click="openTestWebhookModal(app)">
-            <Send :size="13" /> Test Webhook
+          <button class="btn btn-sm btn-primary" @click="openTestModal(app)">
+            <Send :size="13" /> {{ t('apps.testWebhook') }}
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Create / Edit App Modal -->
-    <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3 class="modal-title">{{ isEditing ? 'Edit Application' : 'Create New Application' }}</h3>
-          <button class="modal-close" @click="closeModal">
-            <X :size="18" />
-          </button>
+    <!-- Create / Edit Slide-Over Drawer -->
+    <Drawer
+      :isOpen="isDrawerOpen"
+      :title="isEditing ? t('apps.editApp') : t('apps.createApp')"
+      :subtitle="isEditing ? form.name : t('apps.subtitle')"
+      @close="closeDrawer"
+    >
+      <form @submit.prevent="saveApp" class="drawer-form">
+        <div class="form-group">
+          <label class="form-label">{{ t('apps.appName') }} *</label>
+          <input
+            v-model="form.name"
+            type="text"
+            required
+            class="form-control"
+            :placeholder="t('apps.appNamePlaceholder')"
+          />
         </div>
 
-        <form @submit.prevent="handleSubmitApp" class="modal-body">
+        <div class="form-group">
+          <label class="form-label">{{ t('apps.webhookUrl') }}</label>
+          <input
+            v-model="form.webhook_url"
+            type="url"
+            class="form-control"
+            dir="ltr"
+            placeholder="https://api.yourdomain.com/webhooks"
+          />
+          <span class="form-hint">{{ t('apps.webhookUrlHint') }}</span>
+        </div>
+
+        <div v-if="!isEditing" class="form-group">
+          <label class="form-label">{{ t('apps.customHmacSecret') }}</label>
+          <input
+            v-model="form.webhook_secret"
+            type="text"
+            class="form-control"
+            dir="ltr"
+            placeholder="whsec_..."
+          />
+          <span class="form-hint">{{ t('apps.customHmacSecretHint') }}</span>
+        </div>
+      </form>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="closeDrawer" :disabled="saving">{{ t('common.cancel') }}</button>
+        <button class="btn btn-primary" @click="saveApp" :disabled="saving">
+          <RefreshCw v-if="saving" :size="14" class="spin-anim" />
+          {{ isEditing ? t('common.save') : t('common.create') }}
+        </button>
+      </template>
+    </Drawer>
+
+    <!-- Test Dispatch Modal -->
+    <Modal
+      :isOpen="isTestModalOpen"
+      :title="`${t('apps.dispatchTitle')} - ${activeApp?.name || ''}`"
+      width="680px"
+      @close="closeTestModal"
+    >
+      <form @submit.prevent="executeTestDispatch" class="test-form">
+        <div class="form-row-grid">
           <div class="form-group">
-            <label class="form-label">Application Name <span class="text-danger">*</span></label>
+            <label class="form-label">{{ t('apps.eventName') }} *</label>
             <input
-              v-model="form.name"
+              v-model="testForm.event_name"
               type="text"
-              class="form-input"
-              placeholder="e.g. Stripe Sync Service, E-Commerce Store"
               required
+              class="form-control"
+              placeholder="e.g. order.created"
+              dir="ltr"
             />
           </div>
-
           <div class="form-group">
-            <label class="form-label">Webhook Destination URL</label>
+            <label class="form-label">{{ t('apps.overrideUrl') }}</label>
             <input
-              v-model="form.webhook_url"
+              v-model="testForm.target_url_override"
               type="url"
-              class="form-input"
-              placeholder="https://api.yourdomain.com/webhooks"
-            />
-            <span class="form-hint">The HTTP/HTTPS endpoint where webhook events will be POSTed.</span>
-          </div>
-
-          <div v-if="!isEditing" class="form-group">
-            <label class="form-label">Custom HMAC Secret (Optional)</label>
-            <input
-              v-model="form.webhook_secret"
-              type="text"
-              class="form-input"
-              placeholder="Leave empty to auto-generate secure secret"
+              class="form-control"
+              :placeholder="activeApp?.webhook_url || activeApp?.webhookUrl || 'https://webhook.site/...'"
+              dir="ltr"
             />
           </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="closeModal">Cancel</button>
-            <button type="submit" class="btn btn-primary" :disabled="saving">
-              <RefreshCw v-if="saving" :size="15" class="spin-anim" />
-              {{ isEditing ? 'Update Application' : 'Create Application' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Test Webhook Modal -->
-    <div v-if="showTestModal" class="modal-backdrop" @click.self="closeTestModal">
-      <div class="modal-card modal-large">
-        <div class="modal-header">
-          <div class="modal-title-with-app">
-            <Send :size="18" class="text-primary" />
-            <h3 class="modal-title">Dispatch Webhook &bull; {{ activeApp?.name }}</h3>
-          </div>
-          <button class="modal-close" @click="closeTestModal">
-            <X :size="18" />
-          </button>
         </div>
 
-        <form @submit.prevent="handleSendWebhook" class="modal-body">
-          <div class="grid-2-col">
-            <div class="form-group">
-              <label class="form-label">Event Name <span class="text-danger">*</span></label>
-              <input
-                v-model="testForm.event_name"
-                type="text"
-                class="form-input"
-                placeholder="e.g. payment.succeeded, user.created"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Override Target URL (Optional)</label>
-              <input
-                v-model="testForm.target_url_override"
-                type="url"
-                class="form-input"
-                :placeholder="activeApp?.webhook_url || activeApp?.webhookUrl || 'https://webhook.site/...'"
-              />
-            </div>
-          </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('apps.payloadJson') }} *</label>
+          <textarea
+            v-model="testForm.payload_str"
+            rows="6"
+            required
+            class="form-control code-editor"
+            dir="ltr"
+          ></textarea>
+        </div>
 
-          <div class="form-group">
-            <label class="form-label">Payload JSON Data <span class="text-danger">*</span></label>
-            <textarea
-              v-model="testForm.payload_str"
-              rows="6"
-              class="form-input code-font"
-              placeholder='{\n  "event": "user.created",\n  "data": {\n    "id": "usr_123",\n    "email": "user@example.com"\n  }\n}'
-              required
-            ></textarea>
+        <!-- Result Box -->
+        <div v-if="testResult" class="test-result-box" :class="testResult.success ? 'result-success' : 'result-error'">
+          <div class="result-header">
+            <div class="result-title">
+              <CheckCircle2 v-if="testResult.success" :size="16" class="text-success" />
+              <AlertCircle v-else :size="16" class="text-danger" />
+              <strong>Status: {{ testResult.data?.status || 'UNKNOWN' }}</strong>
+              <span v-if="testResult.data?.response_status_code" class="badge ml-2" :class="testResult.data?.response_status_code < 400 ? 'badge-success' : 'badge-danger'">
+                HTTP {{ testResult.data?.response_status_code }}
+              </span>
+              <span v-if="testResult.data?.latency_ms" class="badge badge-secondary ml-1">
+                {{ testResult.data?.latency_ms }} ms
+              </span>
+            </div>
           </div>
+          <div v-if="testResult.data?.signature" class="result-sig" dir="ltr">
+            <span class="text-muted">HMAC-SHA256:</span>
+            <code>{{ testResult.data?.signature }}</code>
+          </div>
+          <div v-if="testResult.data?.response_body" class="result-body-preview" dir="ltr">
+            <span class="text-muted">Response:</span>
+            <pre>{{ testResult.data?.response_body }}</pre>
+          </div>
+        </div>
+      </form>
 
-          <!-- Dispatch Result Preview Box -->
-          <div v-if="testResult" class="test-result-box" :class="testResult.success ? 'result-success' : 'result-error'">
-            <div class="result-header">
-              <div class="result-title">
-                <CheckCircle2 v-if="testResult.success" :size="16" class="text-success" />
-                <AlertCircle v-else :size="16" class="text-danger" />
-                <strong>Status: {{ testResult.data?.status || 'UNKNOWN' }}</strong>
-                <span v-if="testResult.data?.response_status_code" class="badge ml-2">
-                  HTTP {{ testResult.data?.response_status_code }}
-                </span>
-                <span v-if="testResult.data?.latency_ms" class="badge ml-1">
-                  {{ testResult.data?.latency_ms }} ms
-                </span>
-              </div>
-            </div>
-            <div v-if="testResult.data?.signature" class="result-sig">
-              <span class="text-muted">HMAC-SHA256 Signature:</span>
-              <code>{{ testResult.data?.signature }}</code>
-            </div>
-            <div v-if="testResult.data?.response_body" class="result-body-preview">
-              <span class="text-muted">Response Body:</span>
-              <pre>{{ testResult.data?.response_body }}</pre>
-            </div>
-          </div>
+      <template #footer>
+        <router-link to="/webhooks/logs" class="btn btn-outline btn-sm mr-auto" @click="closeTestModal">
+          <FileText :size="14" /> {{ t('apps.viewAllLogs') }}
+        </router-link>
+        <button class="btn btn-secondary btn-sm" @click="closeTestModal">{{ t('common.close') }}</button>
+        <button class="btn btn-primary btn-sm" @click="executeTestDispatch" :disabled="sending">
+          <RefreshCw v-if="sending" :size="14" class="spin-anim" />
+          <Send v-else :size="14" /> {{ t('apps.sendNow') }}
+        </button>
+      </template>
+    </Modal>
 
-          <div class="modal-footer">
-            <router-link to="/webhooks/logs" class="btn btn-outline mr-auto">
-              <FileText :size="14" /> View All Logs
-            </router-link>
-            <button type="button" class="btn btn-secondary" @click="closeTestModal">Close</button>
-            <button type="submit" class="btn btn-primary" :disabled="sending">
-              <RefreshCw v-if="sending" :size="15" class="spin-anim" />
-              <Send v-else :size="15" /> Send Webhook Now
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <!-- Delete Confirmation Modal -->
+    <Modal
+      :isOpen="isDeleteModalOpen"
+      :title="t('common.confirmDelete')"
+      @close="isDeleteModalOpen = false"
+    >
+      <p class="modal-text">
+        {{ t('apps.deletePrompt', { name: appToDelete?.name || '' }) }}
+      </p>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="isDeleteModalOpen = false" :disabled="deleting">{{ t('common.cancel') }}</button>
+        <button class="btn btn-danger" @click="executeDelete" :disabled="deleting">
+          <RefreshCw v-if="deleting" :size="14" class="spin-anim" />
+          {{ t('common.delete') }}
+        </button>
+      </template>
+    </Modal>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from '../locales'
 import { appService } from '../services/appService'
 import { webhookService } from '../services/webhookService'
 import { useToastStore } from '../stores/toast'
+import Drawer from '../components/common/Drawer.vue'
+import Modal from '../components/common/Modal.vue'
+import EmptyState from '../components/common/EmptyState.vue'
 import {
   Layers,
   Plus,
@@ -326,7 +351,6 @@ import {
   Send,
   Edit3,
   Trash2,
-  X,
   Zap,
   ShieldCheck,
   CheckCircle2,
@@ -334,18 +358,19 @@ import {
   FileText,
 } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const toastStore = useToastStore()
 
 const loading = ref(false)
 const saving = ref(false)
 const sending = ref(false)
+const deleting = ref(false)
 const apps = ref([])
 const searchQuery = ref('')
-
 const revealedSecrets = ref({})
 
-// Modal States
-const showModal = ref(false)
+// Drawer States
+const isDrawerOpen = ref(false)
 const isEditing = ref(false)
 const form = ref({
   id: '',
@@ -354,8 +379,12 @@ const form = ref({
   webhook_secret: '',
 })
 
-// Test Webhook Modal States
-const showTestModal = ref(false)
+// Delete Modal States
+const isDeleteModalOpen = ref(false)
+const appToDelete = ref(null)
+
+// Test Modal States
+const isTestModalOpen = ref(false)
 const activeApp = ref(null)
 const testResult = ref(null)
 const testForm = ref({
@@ -413,7 +442,7 @@ async function copyToClipboard(text, label) {
   if (!text) return
   try {
     await navigator.clipboard.writeText(text)
-    toastStore.success(`${label} copied to clipboard!`)
+    toastStore.success(`${label} copied!`)
   } catch (err) {
     toastStore.error('Failed to copy to clipboard.')
   }
@@ -431,7 +460,7 @@ async function fetchApps() {
   }
 }
 
-function openCreateModal() {
+function openCreateDrawer() {
   isEditing.value = false
   form.value = {
     id: '',
@@ -439,10 +468,10 @@ function openCreateModal() {
     webhook_url: '',
     webhook_secret: '',
   }
-  showModal.value = true
+  isDrawerOpen.value = true
 }
 
-function openEditModal(app) {
+function openEditDrawer(app) {
   isEditing.value = true
   form.value = {
     id: app.id,
@@ -450,14 +479,15 @@ function openEditModal(app) {
     webhook_url: app.webhook_url || app.webhookUrl || '',
     webhook_secret: '',
   }
-  showModal.value = true
+  isDrawerOpen.value = true
 }
 
-function closeModal() {
-  showModal.value = false
+function closeDrawer() {
+  isDrawerOpen.value = false
 }
 
-async function handleSubmitApp() {
+async function saveApp() {
+  if (!form.value.name.trim()) return
   saving.value = true
   try {
     if (isEditing.value) {
@@ -474,7 +504,7 @@ async function handleSubmitApp() {
       })
       toastStore.success('Application created successfully!')
     }
-    closeModal()
+    closeDrawer()
     await fetchApps()
   } catch (err) {
     toastStore.error(err.response?.data?.error || 'Failed to save application.')
@@ -483,23 +513,31 @@ async function handleSubmitApp() {
   }
 }
 
-async function confirmDelete(app) {
-  if (confirm(`Are you sure you want to delete "${app.name}"? This action cannot be undone.`)) {
-    try {
-      await appService.deleteApp(app.id)
-      toastStore.success('Application deleted.')
-      await fetchApps()
-    } catch (err) {
-      toastStore.error(err.response?.data?.error || 'Failed to delete application.')
-    }
+function confirmDelete(app) {
+  appToDelete.value = app
+  isDeleteModalOpen.value = true
+}
+
+async function executeDelete() {
+  if (!appToDelete.value) return
+  deleting.value = true
+  try {
+    await appService.deleteApp(appToDelete.value.id)
+    toastStore.success('Application deleted.')
+    isDeleteModalOpen.value = false
+    await fetchApps()
+  } catch (err) {
+    toastStore.error(err.response?.data?.error || 'Failed to delete application.')
+  } finally {
+    deleting.value = false
   }
 }
 
 async function rotateSecrets(app) {
-  if (confirm(`Rotate secrets for "${app.name}"? All existing webhook integrations must be updated.`)) {
+  if (confirm(t('apps.rotateConfirm', { name: app.name }))) {
     try {
       await appService.rotateSecrets(app.id, { rotate_app_secret: true, rotate_webhook_secret: true })
-      toastStore.success('Secrets regenerated successfully!')
+      toastStore.success('Secrets rotated successfully!')
       await fetchApps()
     } catch (err) {
       toastStore.error(err.response?.data?.error || 'Failed to rotate secrets.')
@@ -507,21 +545,21 @@ async function rotateSecrets(app) {
   }
 }
 
-function openTestWebhookModal(app) {
+function openTestModal(app) {
   activeApp.value = app
   testResult.value = null
   testForm.value.app_id = app.app_id || app.appId || app.id
   testForm.value.target_url_override = app.webhook_url || app.webhookUrl || ''
-  showTestModal.value = true
+  isTestModalOpen.value = true
 }
 
 function closeTestModal() {
-  showTestModal.value = false
+  isTestModalOpen.value = false
   activeApp.value = null
   testResult.value = null
 }
 
-async function handleSendWebhook() {
+async function executeTestDispatch() {
   sending.value = true
   testResult.value = null
   try {
@@ -564,46 +602,17 @@ onMounted(() => {
   padding: 1.5rem;
 }
 
-.view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-}
-
-.view-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--zoho-text-main);
-  margin-bottom: 0.25rem;
-}
-
-.view-subtitle {
-  font-size: 0.875rem;
-  color: var(--zoho-text-muted);
-}
-
-.header-actions {
-  display: flex;
-  gap: 0.75rem;
-}
-
 .stats-overview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1rem;
-  margin-bottom: 1.5rem;
 }
 
 .stat-card {
-  background: var(--zoho-card-bg);
-  border: 1px solid var(--zoho-border-color);
-  border-radius: var(--radius-lg);
   padding: 1.25rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .stat-icon-wrapper {
@@ -630,40 +639,38 @@ onMounted(() => {
 .stat-value {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--zoho-text-main);
+  color: var(--text-primary);
 }
 .stat-label {
   font-size: 0.75rem;
-  color: var(--zoho-text-muted);
+  color: var(--text-muted);
 }
 
-.filter-bar {
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
+.filter-card {
+  padding: 0.875rem 1.25rem;
 }
 
 .search-input-wrapper {
   position: relative;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
 }
 
 .search-icon {
   position: absolute;
-  left: 10px;
+  inset-inline-start: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--zoho-text-muted);
+  color: var(--text-muted);
 }
 
 .search-field {
-  padding-left: 2rem;
+  padding-inline-start: 2.25rem;
 }
 
 .apps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 1.25rem;
 }
 
@@ -671,24 +678,22 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border: 1px solid var(--zoho-border-color);
   border-radius: var(--radius-lg);
-  background: var(--zoho-card-bg);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .app-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .app-card-header {
-  padding: 1.25rem;
+  padding: 1.125rem 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--zoho-border-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .app-title-area {
@@ -697,11 +702,11 @@ onMounted(() => {
   gap: 0.75rem;
 }
 
-.app-avatar {
-  width: 38px;
-  height: 38px;
+.app-avatar-circle {
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: #ffffff;
   font-weight: 700;
   font-size: 0.875rem;
@@ -710,36 +715,42 @@ onMounted(() => {
   justify-content: center;
 }
 
-.app-name {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--zoho-text-main);
-  margin-bottom: 0.125rem;
+.app-name-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
-.app-card-actions {
+.app-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.action-buttons-group {
   display: flex;
   gap: 0.35rem;
 }
 
-.btn-icon {
+.action-icon-btn {
   background: transparent;
-  border: 1px solid var(--zoho-border-color);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   padding: 0.4rem;
   cursor: pointer;
-  color: var(--zoho-text-muted);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.btn-icon:hover {
-  background: var(--zoho-bg-light);
-  color: var(--zoho-text-main);
+.action-icon-btn:hover {
+  background: #f8fafc;
+  color: var(--text-primary);
 }
-.btn-icon.text-danger:hover {
+.action-icon-btn.text-danger:hover {
   background: #fef2f2;
-  color: #dc2626;
+  color: #ef4444;
   border-color: #fecaca;
 }
 
@@ -751,7 +762,7 @@ onMounted(() => {
   flex: 1;
 }
 
-.credential-row {
+.credential-field {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -759,37 +770,59 @@ onMounted(() => {
 
 .cred-label {
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--zoho-text-muted);
+  color: var(--text-muted);
 }
 
-.cred-value-box {
+.cred-box {
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: var(--radius-sm);
-  padding: 0.35rem 0.6rem;
+  padding: 0.4rem 0.6rem;
+  gap: 0.5rem;
 }
 
-.cred-value-box code {
+.cred-code {
   font-family: monospace;
   font-size: 0.75rem;
   color: #0f172a;
   word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.cred-url-box {
+.cred-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.copy-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+}
+.copy-btn:hover {
+  color: #2563eb;
+}
+
+.url-box {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: var(--radius-sm);
-  padding: 0.35rem 0.6rem;
+  padding: 0.4rem 0.6rem;
   font-size: 0.75rem;
 }
 
@@ -798,118 +831,36 @@ onMounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #334155;
-}
-
-.btn-copy {
-  background: transparent;
-  border: none;
-  color: var(--zoho-text-muted);
-  cursor: pointer;
-  padding: 0.2rem;
-  display: flex;
-  align-items: center;
-}
-.btn-copy:hover {
-  color: #2563eb;
+  font-family: monospace;
 }
 
 .app-card-footer {
   padding: 0.875rem 1.25rem;
-  background: #fafafa;
-  border-top: 1px solid var(--zoho-border-color);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: #fafbfc;
+  border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
-  align-items: center;
-}
-
-.empty-state-card {
-  text-align: center;
-  padding: 4rem 2rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* Modal Styles */
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1rem;
-}
-
-.modal-card {
-  background: #ffffff;
-  border-radius: var(--radius-xl);
-  width: 100%;
-  max-width: 500px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-}
-
-.modal-card.modal-large {
-  max-width: 680px;
-}
-
-.modal-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--zoho-border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.modal-title-with-app {
-  display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.modal-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--zoho-text-main);
-}
-
-.modal-close {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--zoho-text-muted);
-}
-
-.modal-body {
-  padding: 1.5rem;
+/* Forms and Modals */
+.drawer-form, .test-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.125rem;
 }
 
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.grid-2-col {
+.form-row-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
 
-.code-font {
+.code-editor {
   font-family: monospace;
   font-size: 0.8rem;
+  background: #f8fafc;
 }
 
 .test-result-box {
@@ -947,10 +898,10 @@ onMounted(() => {
   margin-bottom: 0.5rem;
   display: flex;
   gap: 0.5rem;
+  word-break: break-all;
 }
 .result-sig code {
   font-family: monospace;
-  word-break: break-all;
 }
 
 .result-body-preview pre {
@@ -962,5 +913,11 @@ onMounted(() => {
   font-size: 0.75rem;
   max-height: 120px;
   overflow-y: auto;
+}
+
+.modal-text {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  line-height: 1.5;
 }
 </style>

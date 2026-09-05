@@ -3,42 +3,42 @@
     <!-- Header -->
     <div class="view-header">
       <div>
-        <h1 class="view-title">Webhook Delivery Logs</h1>
-        <p class="view-subtitle">Inspect real-time webhook executions, delivery status codes, latencies, and payload signatures.</p>
+        <h1 class="view-title">{{ t('webhooks.logsTitle') }}</h1>
+        <p class="view-subtitle">{{ t('webhooks.logsSubtitle') }}</p>
       </div>
 
       <div class="header-actions">
-        <button class="btn btn-secondary" @click="fetchLogs" :disabled="loading">
-          <RefreshCw :size="15" :class="{ 'spin-anim': loading }" /> Refresh
+        <button class="btn btn-secondary btn-sm" @click="fetchLogs" :disabled="loading">
+          <RefreshCw :size="14" :class="{ 'spin-anim': loading }" /> {{ t('common.refresh') }}
         </button>
       </div>
     </div>
 
     <!-- Filter Bar -->
-    <div class="card filter-card mb-4">
-      <div class="filter-controls">
-        <div class="search-box">
+    <div class="card filter-card mb-6">
+      <div class="filter-controls-row">
+        <div class="search-input-wrapper">
           <Search :size="15" class="search-icon" />
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search by Event, URL, or ID..."
-            class="form-input search-field"
+            :placeholder="t('webhooks.searchPlaceholder')"
+            class="form-control search-field"
             @keyup.enter="fetchLogs"
           />
         </div>
 
-        <div class="filter-selects">
-          <select v-model="selectedStatus" class="form-select" @change="fetchLogs">
-            <option value="">All Statuses</option>
+        <div class="select-filters-group">
+          <select v-model="selectedStatus" class="form-control select-field" @change="fetchLogs">
+            <option value="">{{ t('webhooks.allStatuses') }}</option>
             <option value="SUCCESS">Success (2xx)</option>
             <option value="FAILED">Failed</option>
             <option value="TIMEOUT">Timeout</option>
             <option value="PENDING">Pending</option>
           </select>
 
-          <select v-model="selectedAppId" class="form-select" @change="fetchLogs">
-            <option value="">All Applications</option>
+          <select v-model="selectedAppId" class="form-control select-field" @change="fetchLogs">
+            <option value="">{{ t('webhooks.allApps') }}</option>
             <option v-for="app in apps" :key="app.id" :value="app.id">
               {{ app.name }}
             </option>
@@ -47,33 +47,37 @@
       </div>
     </div>
 
-    <!-- Logs Table -->
+    <!-- Logs Table Card -->
     <div class="card table-card">
       <div v-if="loading && logs.length === 0" class="text-center py-12">
         <RefreshCw :size="28" class="spin-anim text-primary mx-auto" />
-        <p class="mt-3 text-muted">Loading delivery logs...</p>
+        <p class="mt-3 text-muted">{{ t('common.loading') }}</p>
       </div>
 
-      <div v-else-if="logs.length === 0" class="empty-state">
-        <Activity :size="48" class="text-muted mb-2" />
-        <h4 class="empty-title">No Webhook Logs Found</h4>
-        <p class="empty-subtitle">Dispatch a webhook from the Applications tab or your API to see delivery traces here.</p>
-        <router-link to="/apps" class="btn btn-primary mt-3">
-          <Layers :size="15" /> Go to Applications
-        </router-link>
-      </div>
+      <EmptyState
+        v-else-if="logs.length === 0"
+        :title="t('webhooks.noLogs')"
+        :description="t('webhooks.noLogsSubtitle')"
+        :icon="Activity"
+      >
+        <template #action>
+          <router-link to="/apps" class="btn btn-primary btn-sm">
+            <Layers :size="14" /> {{ t('webhooks.goToApps') }}
+          </router-link>
+        </template>
+      </EmptyState>
 
       <div v-else class="table-responsive">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Status</th>
-              <th>Event</th>
-              <th>Destination URL</th>
-              <th>HTTP Code</th>
-              <th>Latency</th>
-              <th>Timestamp</th>
-              <th class="text-right">Actions</th>
+              <th>{{ t('webhooks.status') }}</th>
+              <th>{{ t('webhooks.event') }}</th>
+              <th>{{ t('webhooks.destinationUrl') }}</th>
+              <th>{{ t('webhooks.httpCode') }}</th>
+              <th>{{ t('webhooks.latency') }}</th>
+              <th>{{ t('webhooks.timestamp') }}</th>
+              <th class="text-right">{{ t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -85,35 +89,37 @@
                 </span>
               </td>
               <td>
-                <div class="event-cell">
-                  <Zap :size="13" class="text-primary" />
+                <div class="event-cell" dir="ltr">
+                  <Zap :size="13" class="text-primary flex-shrink-0" />
                   <span class="event-name">{{ call.event_name || call.eventName }}</span>
                 </div>
               </td>
               <td>
-                <span class="url-cell" :title="call.target_url || call.targetUrl">
+                <span class="url-cell" dir="ltr" :title="call.target_url || call.targetUrl">
                   {{ call.target_url || call.targetUrl }}
                 </span>
               </td>
               <td>
                 <span v-if="call.response_status_code || call.responseStatusCode" class="code-badge" :class="getHttpCodeClass(call.response_status_code || call.responseStatusCode)">
-                  {{ call.response_status_code || call.responseStatusCode }}
+                  HTTP {{ call.response_status_code || call.responseStatusCode }}
                 </span>
                 <span v-else class="text-muted">&mdash;</span>
               </td>
               <td>
-                <span class="latency-text">{{ call.latency_ms || call.latencyMs || 0 }} ms</span>
+                <span class="latency-text" dir="ltr">{{ call.latency_ms || call.latencyMs || 0 }} ms</span>
               </td>
               <td>
                 <span class="time-text">{{ formatDate(call.created_at || call.createdAt) }}</span>
               </td>
               <td class="text-right" @click.stop>
-                <button class="btn btn-xs btn-outline mr-1" @click="openDetail(call)">
-                  <Eye :size="13" /> Details
-                </button>
-                <button class="btn btn-xs btn-secondary" @click="retryCall(call)" :disabled="retryingId === call.id">
-                  <RotateCw :size="13" :class="{ 'spin-anim': retryingId === call.id }" /> Retry
-                </button>
+                <div class="action-buttons-group">
+                  <button class="btn btn-xs btn-outline" @click="openDetail(call)">
+                    <Eye :size="12" /> {{ t('webhooks.details') }}
+                  </button>
+                  <button class="btn btn-xs btn-secondary" @click="retryCall(call)" :disabled="retryingId === call.id">
+                    <RotateCw :size="12" :class="{ 'spin-anim': retryingId === call.id }" /> {{ t('webhooks.retry') }}
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -121,94 +127,88 @@
       </div>
 
       <!-- Pagination -->
-      <div v-if="totalPages > 1" class="pagination-bar">
-        <span class="page-info">Page {{ page }} of {{ totalPages }} ({{ total }} total deliveries)</span>
-        <div class="page-controls">
-          <button class="btn btn-sm btn-outline" :disabled="page <= 1" @click="changePage(page - 1)">
-            Previous
-          </button>
-          <button class="btn btn-sm btn-outline" :disabled="page >= totalPages" @click="changePage(page + 1)">
-            Next
-          </button>
-        </div>
-      </div>
+      <Pagination
+        v-if="total > 0"
+        :page="page"
+        :pageSize="limit"
+        :total="total"
+        @update:page="changePage"
+        @update:pageSize="changeLimit"
+      />
     </div>
 
-    <!-- Detail Drawer / Modal -->
-    <div v-if="activeLog" class="modal-backdrop" @click.self="activeLog = null">
-      <div class="modal-card modal-detail">
-        <div class="modal-header">
-          <div class="modal-title-box">
-            <h3 class="modal-title">Webhook Delivery Details</h3>
-            <span class="badge ml-2" :class="getStatusBadgeClass(activeLog.status)">{{ activeLog.status }}</span>
+    <!-- Detail Modal -->
+    <Modal
+      :isOpen="!!activeLog"
+      :title="t('webhooks.deliveryDetails')"
+      width="720px"
+      @close="activeLog = null"
+    >
+      <div v-if="activeLog" class="detail-content">
+        <div class="meta-info-grid">
+          <div class="meta-item">
+            <span class="meta-lbl">{{ t('webhooks.deliveryId') }}</span>
+            <code dir="ltr">{{ activeLog.id }}</code>
           </div>
-          <button class="modal-close" @click="activeLog = null">
-            <X :size="18" />
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <div class="meta-info-grid">
-            <div class="meta-item">
-              <span class="meta-lbl">Delivery ID</span>
-              <code>{{ activeLog.id }}</code>
-            </div>
-            <div class="meta-item">
-              <span class="meta-lbl">Event</span>
-              <strong>{{ activeLog.event_name || activeLog.eventName }}</strong>
-            </div>
-            <div class="meta-item">
-              <span class="meta-lbl">Target URL</span>
-              <span class="url-val">{{ activeLog.target_url || activeLog.targetUrl }}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-lbl">Attempts</span>
-              <span>{{ activeLog.attempt_count || activeLog.attemptCount || 1 }}</span>
-            </div>
+          <div class="meta-item">
+            <span class="meta-lbl">{{ t('webhooks.event') }}</span>
+            <strong dir="ltr">{{ activeLog.event_name || activeLog.eventName }}</strong>
           </div>
-
-          <!-- HMAC Signature -->
-          <div class="detail-section">
-            <span class="section-title">Cryptographic Signature Header (HMAC-SHA256)</span>
-            <div class="code-box">
-              <code>{{ activeLog.signature || 'None' }}</code>
-            </div>
+          <div class="meta-item">
+            <span class="meta-lbl">{{ t('webhooks.destinationUrl') }}</span>
+            <span class="url-val" dir="ltr">{{ activeLog.target_url || activeLog.targetUrl }}</span>
           </div>
-
-          <!-- Payload JSON -->
-          <div class="detail-section">
-            <span class="section-title">Request Payload</span>
-            <pre class="code-box-pre">{{ formatJSON(activeLog.payload_json || activeLog.payloadJson) }}</pre>
-          </div>
-
-          <!-- Response Body -->
-          <div class="detail-section">
-            <div class="section-header-flex">
-              <span class="section-title">Destination Response</span>
-              <span class="badge" :class="getHttpCodeClass(activeLog.response_status_code || activeLog.responseStatusCode)">
-                HTTP {{ activeLog.response_status_code || activeLog.responseStatusCode || 'None' }}
-              </span>
-            </div>
-            <pre class="code-box-pre">{{ activeLog.response_body || activeLog.responseBody || activeLog.error_message || 'No response recorded.' }}</pre>
+          <div class="meta-item">
+            <span class="meta-lbl">{{ t('webhooks.attempts') }}</span>
+            <span>{{ activeLog.attempt_count || activeLog.attemptCount || 1 }}</span>
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="activeLog = null">Close</button>
-          <button class="btn btn-primary" @click="retryCall(activeLog)" :disabled="retryingId === activeLog.id">
-            <RotateCw :size="14" :class="{ 'spin-anim': retryingId === activeLog.id }" /> Retry Delivery
-          </button>
+        <!-- HMAC Signature -->
+        <div class="detail-section">
+          <span class="section-title">{{ t('webhooks.hmacHeader') }}</span>
+          <div class="code-box" dir="ltr">
+            <code>{{ activeLog.signature || 'None' }}</code>
+          </div>
+        </div>
+
+        <!-- Payload JSON -->
+        <div class="detail-section">
+          <span class="section-title">{{ t('webhooks.requestPayload') }}</span>
+          <pre class="code-box-pre" dir="ltr">{{ formatJSON(activeLog.payload_json || activeLog.payloadJson) }}</pre>
+        </div>
+
+        <!-- Response Body -->
+        <div class="detail-section">
+          <div class="section-header-flex">
+            <span class="section-title">{{ t('webhooks.destinationResponse') }}</span>
+            <span class="badge" :class="getHttpCodeClass(activeLog.response_status_code || activeLog.responseStatusCode)">
+              HTTP {{ activeLog.response_status_code || activeLog.responseStatusCode || 'None' }}
+            </span>
+          </div>
+          <pre class="code-box-pre" dir="ltr">{{ activeLog.response_body || activeLog.responseBody || activeLog.error_message || 'No response recorded.' }}</pre>
         </div>
       </div>
-    </div>
+
+      <template #footer>
+        <button class="btn btn-secondary btn-sm" @click="activeLog = null">{{ t('common.close') }}</button>
+        <button class="btn btn-primary btn-sm" @click="retryCall(activeLog)" :disabled="retryingId === activeLog?.id">
+          <RotateCw :size="13" :class="{ 'spin-anim': retryingId === activeLog?.id }" /> {{ t('webhooks.retry') }}
+        </button>
+      </template>
+    </Modal>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from '../locales'
 import { webhookService } from '../services/webhookService'
 import { appService } from '../services/appService'
 import { useToastStore } from '../stores/toast'
+import Modal from '../components/common/Modal.vue'
+import Pagination from '../components/common/Pagination.vue'
+import EmptyState from '../components/common/EmptyState.vue'
 import {
   RefreshCw,
   Search,
@@ -216,10 +216,10 @@ import {
   Activity,
   Eye,
   RotateCw,
-  X,
   Layers,
 } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const toastStore = useToastStore()
 
 const loading = ref(false)
@@ -235,8 +235,6 @@ const selectedStatus = ref('')
 const selectedAppId = ref('')
 
 const activeLog = ref(null)
-
-const totalPages = computed(() => Math.ceil(total.value / limit.value) || 1)
 
 function getStatusBadgeClass(status) {
   switch (status) {
@@ -307,6 +305,12 @@ function changePage(newPage) {
   fetchLogs()
 }
 
+function changeLimit(newLimit) {
+  limit.value = newLimit
+  page.value = 1
+  fetchLogs()
+}
+
 function openDetail(call) {
   activeLog.value = call
 }
@@ -342,37 +346,18 @@ onMounted(() => {
   padding: 1.5rem;
 }
 
-.view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-}
-
-.view-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--zoho-text-main);
-  margin-bottom: 0.25rem;
-}
-
-.view-subtitle {
-  font-size: 0.875rem;
-  color: var(--zoho-text-muted);
-}
-
 .filter-card {
-  padding: 1rem;
+  padding: 0.875rem 1.25rem;
 }
 
-.filter-controls {
+.filter-controls-row {
   display: flex;
   gap: 1rem;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.search-box {
+.search-input-wrapper {
   position: relative;
   flex: 1;
   min-width: 260px;
@@ -380,28 +365,23 @@ onMounted(() => {
 
 .search-icon {
   position: absolute;
-  left: 10px;
+  inset-inline-start: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--zoho-text-muted);
+  color: var(--text-muted);
 }
 
 .search-field {
-  padding-left: 2rem;
+  padding-inline-start: 2.25rem;
 }
 
-.filter-selects {
+.select-filters-group {
   display: flex;
   gap: 0.75rem;
 }
 
-.form-select {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--zoho-border-color);
-  border-radius: var(--radius-md);
-  background-color: #ffffff;
-  font-size: 0.875rem;
-  color: var(--zoho-text-main);
+.select-field {
+  min-width: 160px;
 }
 
 .table-card {
@@ -415,25 +395,25 @@ onMounted(() => {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  text-align: left;
+  text-align: start;
   font-size: 0.875rem;
 }
 
 .data-table th {
   background: #f8fafc;
-  padding: 0.75rem 1rem;
-  font-weight: 600;
-  color: var(--zoho-text-muted);
-  border-bottom: 1px solid var(--zoho-border-color);
-  text-transform: uppercase;
+  padding: 0.75rem 1.25rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
   font-size: 0.75rem;
+  text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .data-table td {
-  padding: 0.875rem 1rem;
-  border-bottom: 1px solid var(--zoho-border-color);
-  color: var(--zoho-text-main);
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .table-row.hoverable {
@@ -453,7 +433,7 @@ onMounted(() => {
 }
 
 .url-cell {
-  max-width: 250px;
+  max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -486,66 +466,26 @@ onMounted(() => {
   color: #991b1b;
 }
 
-.badge-success {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.badge-danger {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.badge-warning {
-  background: #fef9c3;
-  color: #854d0e;
-}
-
-.badge-secondary {
-  background: #f1f5f9;
-  color: #475569;
-}
-
 .status-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: currentColor;
   display: inline-block;
-  margin-right: 4px;
+  margin-inline-end: 4px;
 }
 
-.pagination-bar {
-  padding: 0.875rem 1.25rem;
-  border-top: 1px solid var(--zoho-border-color);
+.action-buttons-group {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8rem;
-  color: var(--zoho-text-muted);
-}
-
-.page-controls {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.empty-state {
-  padding: 3.5rem 1rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  gap: 0.35rem;
+  justify-content: flex-end;
 }
 
 /* Detail Modal */
-.modal-detail {
-  max-width: 720px;
-}
-
-.modal-title-box {
+.detail-content {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .meta-info-grid {
@@ -555,7 +495,6 @@ onMounted(() => {
   background: #f8fafc;
   padding: 1rem;
   border-radius: var(--radius-md);
-  margin-bottom: 1rem;
 }
 
 .meta-item {
@@ -567,22 +506,21 @@ onMounted(() => {
 .meta-lbl {
   font-size: 0.7rem;
   text-transform: uppercase;
-  font-weight: 600;
-  color: var(--zoho-text-muted);
+  font-weight: 700;
+  color: var(--text-muted);
 }
 
 .detail-section {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  margin-top: 0.75rem;
 }
 
 .section-title {
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--zoho-text-muted);
+  color: var(--text-muted);
 }
 
 .section-header-flex {

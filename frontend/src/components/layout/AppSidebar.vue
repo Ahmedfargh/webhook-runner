@@ -58,16 +58,16 @@
       </template>
 
       <!-- Apps & Webhooks Section -->
-      <div v-if="!isCollapsed" class="nav-section-title">Runner & Webhooks</div>
+      <div v-if="!isCollapsed" class="nav-section-title">{{ t('nav.runnerAndWebhooks') }}</div>
 
       <router-link to="/apps" class="nav-item" active-class="nav-item-active">
         <Boxes :size="18" />
-        <span v-if="!isCollapsed">Applications</span>
+        <span v-if="!isCollapsed">{{ t('nav.apps') }}</span>
       </router-link>
 
       <router-link to="/webhooks/logs" class="nav-item" active-class="nav-item-active">
         <Activity :size="18" />
-        <span v-if="!isCollapsed">Webhook Logs</span>
+        <span v-if="!isCollapsed">{{ t('nav.webhookLogs') }}</span>
       </router-link>
 
       <!-- Billing and Plans (Both Users & Admins) -->
