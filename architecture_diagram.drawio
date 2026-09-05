@@ -31,18 +31,26 @@
 
         <!-- ACCOUNTS GRPC BOX -->
         <mxCell id="ov_acc" value="&lt;b style='font-size:14px; color:#7c2d12;'&gt;ACCOUNTS SERVICE (gRPC Port 50051)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#fed7aa;rounded=1;startSize=25;" vertex="1" parent="1">
-          <mxGeometry x="1450" y="140" width="670" height="195" as="geometry" />
+          <mxGeometry x="1450" y="140" width="670" height="135" as="geometry" />
         </mxCell>
         <mxCell id="ov_acc_details" value="• &lt;b&gt;User &amp;amp; Admin Modules:&lt;/b&gt; Registration, bcrypt hashing, profile lookups&lt;br/&gt;• &lt;b&gt;RBAC Engine:&lt;/b&gt; Roles, fine-grained permission tokens, country registry&lt;br/&gt;• &lt;b&gt;Database:&lt;/b&gt; MySQL &lt;i&gt;webhook_accounts&lt;/i&gt; (Pool: 200 MaxOpen, 100 MaxIdle)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fdba74;align=left;spacing=8;fontSize=11;" vertex="1" parent="ov_acc">
-          <mxGeometry x="20" y="35" width="630" height="140" as="geometry" />
+          <mxGeometry x="20" y="30" width="630" height="95" as="geometry" />
         </mxCell>
 
         <!-- SUBSCRIPTIONS GRPC BOX -->
         <mxCell id="ov_sub" value="&lt;b style='font-size:14px; color:#581c87;'&gt;SUBSCRIPTIONS SERVICE (gRPC Port 50052)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#e9d5ff;rounded=1;startSize=25;" vertex="1" parent="1">
-          <mxGeometry x="1450" y="365" width="670" height="195" as="geometry" />
+          <mxGeometry x="1450" y="295" width="670" height="135" as="geometry" />
         </mxCell>
         <mxCell id="ov_sub_details" value="• &lt;b&gt;Plans CRUD:&lt;/b&gt; Tier pricing, webhooks quota, monthly events limit, features JSON&lt;br/&gt;• &lt;b&gt;Subscriptions Lifecycle:&lt;/b&gt; Subscribe, auto-provision free, cancel, admin override&lt;br/&gt;• &lt;b&gt;Invoicing &amp;amp; Offline Payments:&lt;/b&gt; Auto-invoicing, wire proof approval queue &amp;amp; auto-activation&lt;br/&gt;• &lt;b&gt;Database:&lt;/b&gt; MySQL &lt;i&gt;webhook_subscriptions&lt;/i&gt; (Pool: 200 MaxOpen, 100 MaxIdle)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8b4fe;align=left;spacing=8;fontSize=11;" vertex="1" parent="ov_sub">
-          <mxGeometry x="20" y="35" width="630" height="140" as="geometry" />
+          <mxGeometry x="20" y="30" width="630" height="95" as="geometry" />
+        </mxCell>
+
+        <!-- WEBHOOK RUNNER GRPC BOX -->
+        <mxCell id="ov_run" value="&lt;b style='font-size:14px; color:#0e7490;'&gt;WEBHOOK RUNNER SERVICE (gRPC Port 50053)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ecfeff;strokeColor=#a5f3fc;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="450" width="670" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_run_details" value="• &lt;b&gt;App Management:&lt;/b&gt; App ID credentials, Client Secret, and Webhook HMAC Secrets&lt;br/&gt;• &lt;b&gt;HTTP Dispatch Engine:&lt;/b&gt; HMAC-SHA256 signature calculation, retry queue, custom headers&lt;br/&gt;• &lt;b&gt;Telemetry &amp;amp; Built-in Receiver:&lt;/b&gt; Execution logs, status codes, latency benchmarks, test receiver&lt;br/&gt;• &lt;b&gt;Database:&lt;/b&gt; MySQL &lt;i&gt;webhook_runner&lt;/i&gt; (Pool: 200 MaxOpen, 100 MaxIdle)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#67e8f9;align=left;spacing=8;fontSize=11;" vertex="1" parent="ov_run">
+          <mxGeometry x="20" y="30" width="630" height="95" as="geometry" />
         </mxCell>
 
         <!-- EDGES -->
@@ -55,10 +63,13 @@
         <mxCell id="ov_edge3" value="&lt;b&gt;gRPC (Protobuf)&lt;/b&gt;&lt;br/&gt;Service Auth Headers" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7e22ce;strokeWidth=2;fontColor=#6b21a8;" edge="1" parent="1" source="ov_gw" target="ov_sub">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
+        <mxCell id="ov_edge4" value="&lt;b&gt;gRPC (Protobuf)&lt;/b&gt;&lt;br/&gt;Service Auth Headers" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0891b2;strokeWidth=2;fontColor=#0e7490;" edge="1" parent="1" source="ov_gw" target="ov_run">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
 
         <!-- SECURITY CALLOUT BANNER -->
-        <mxCell id="ov_sec_box" value="&lt;b style='font-size:14px;'&gt;SECURITY &amp;amp; ZERO-TRUST BOUNDARY PRINCIPLES:&lt;/b&gt;&lt;hr/&gt;1. &lt;b&gt;End-User Isolation:&lt;/b&gt; End-users and frontend clients NEVER connect directly to gRPC ports or MySQL databases.&lt;br/&gt;2. &lt;b&gt;Caller Whitelisting:&lt;/b&gt; Both Accounts and Subscriptions gRPC services enforce an incoming &lt;i&gt;X-Service-Name&lt;/i&gt; whitelist (&lt;code&gt;ALLOWED_SERVICES=api-gateway,webhook-runner&lt;/code&gt;). Unidentified calls are rejected.&lt;br/&gt;3. &lt;b&gt;Shared Cryptographic Secret:&lt;/b&gt; Every inter-service gRPC call passes a pre-shared 256-bit &lt;i&gt;AUTH_TOKEN&lt;/i&gt; in gRPC context metadata." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f172a;strokeColor=#1e293b;align=left;spacing=12;fontSize=11;fontColor=#f8fafc;" vertex="1" parent="1">
-          <mxGeometry x="40" y="590" width="2080" height="100" as="geometry" />
+        <mxCell id="ov_sec_box" value="&lt;b style='font-size:14px;'&gt;SECURITY &amp;amp; ZERO-TRUST BOUNDARY PRINCIPLES:&lt;/b&gt;&lt;hr/&gt;1. &lt;b&gt;End-User Isolation:&lt;/b&gt; End-users and frontend clients NEVER connect directly to gRPC ports or MySQL databases.&lt;br/&gt;2. &lt;b&gt;Caller Whitelisting:&lt;/b&gt; Accounts, Subscriptions, and Runner gRPC services enforce an incoming &lt;i&gt;X-Service-Name&lt;/i&gt; whitelist (&lt;code&gt;ALLOWED_SERVICES=api-gateway,webhook-runner&lt;/code&gt;). Unidentified calls are rejected.&lt;br/&gt;3. &lt;b&gt;Shared Cryptographic Secret:&lt;/b&gt; Every inter-service gRPC call passes a pre-shared 256-bit &lt;i&gt;AUTH_TOKEN&lt;/i&gt; in gRPC context metadata." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f172a;strokeColor=#1e293b;align=left;spacing=12;fontSize=11;fontColor=#f8fafc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="610" width="2080" height="100" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
@@ -162,6 +173,23 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="rel9" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9333ea;strokeWidth=2;fontColor=#9333ea;" edge="1" parent="erd_sub_group" source="tbl_invoices" target="tbl_manual_payments">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- SCHEMA 3: WEBHOOK RUNNER -->
+        <mxCell id="erd_run_group" value="&lt;b style='font-size:15px; color:#0e7490;'&gt;DATABASE 3: webhook_runner (Applications, Credentials &amp;amp; Dispatch Telemetry)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ecfeff;strokeColor=#a5f3fc;rounded=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="40" y="770" width="2300" height="420" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_apps" value="&lt;b&gt;apps&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;id:&lt;/b&gt; UUID [PK]&lt;br/&gt;+ &lt;b&gt;user_id:&lt;/b&gt; UUID [INDEX, Logical FK &amp;rarr; accounts.users.id]&lt;br/&gt;+ &lt;b&gt;name:&lt;/b&gt; VARCHAR(100)&lt;br/&gt;+ &lt;b&gt;app_id:&lt;/b&gt; VARCHAR(100) [UNIQUE, Client ID e.g. app_live_...]&lt;br/&gt;+ &lt;b&gt;app_secret:&lt;/b&gt; VARCHAR(120) [Client Secret]&lt;br/&gt;+ &lt;b&gt;webhook_url:&lt;/b&gt; VARCHAR(500) [Default Destination]&lt;br/&gt;+ &lt;b&gt;webhook_secret:&lt;/b&gt; VARCHAR(100) [HMAC-SHA256 Signing Key]&lt;br/&gt;+ &lt;b&gt;is_active:&lt;/b&gt; BOOLEAN (DEFAULT true)&lt;br/&gt;+ &lt;b&gt;created_at, updated_at, deleted_at&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#06b6d4;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_run_group">
+          <mxGeometry x="50" y="50" width="480" height="230" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tbl_webhook_calls" value="&lt;b&gt;webhook_calls&lt;/b&gt;&lt;hr/&gt;+ &lt;b&gt;id:&lt;/b&gt; UUID [PK]&lt;br/&gt;+ &lt;b&gt;app_id:&lt;/b&gt; UUID [FK &amp;rarr; apps.id]&lt;br/&gt;+ &lt;b&gt;event_name:&lt;/b&gt; VARCHAR(100) [INDEX e.g. order.created]&lt;br/&gt;+ &lt;b&gt;target_url:&lt;/b&gt; VARCHAR(500)&lt;br/&gt;+ &lt;b&gt;payload_json:&lt;/b&gt; LONGTEXT&lt;br/&gt;+ &lt;b&gt;headers_json:&lt;/b&gt; TEXT&lt;br/&gt;+ &lt;b&gt;status:&lt;/b&gt; VARCHAR(50) (success, failed, pending, retrying, timeout) [INDEX]&lt;br/&gt;+ &lt;b&gt;response_status_code:&lt;/b&gt; INT (HTTP 200, 500, etc.)&lt;br/&gt;+ &lt;b&gt;response_body:&lt;/b&gt; LONGTEXT&lt;br/&gt;+ &lt;b&gt;response_latency_ms:&lt;/b&gt; BIGINT&lt;br/&gt;+ &lt;b&gt;error_message:&lt;/b&gt; TEXT&lt;br/&gt;+ &lt;b&gt;attempt_count:&lt;/b&gt; INT&lt;br/&gt;+ &lt;b&gt;next_retry_at:&lt;/b&gt; DATETIME&lt;br/&gt;+ &lt;b&gt;created_at, updated_at&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#06b6d4;align=left;spacing=6;fontSize=11;" vertex="1" parent="erd_run_group">
+          <mxGeometry x="650" y="50" width="540" height="320" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rel_app_calls" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0891b2;strokeWidth=2;fontColor=#0e7490;" edge="1" parent="erd_run_group" source="tbl_apps" target="tbl_webhook_calls">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
@@ -463,6 +491,45 @@
         </mxCell>
         <mxCell id="fe_role_admin_text" value="• &lt;b&gt;Full Core Modules:&lt;/b&gt; User Management (/users), Admin Accounts (/admins), Roles &amp;amp; Matrix (/roles), Permissions (/permissions).&lt;br/&gt;• &lt;b&gt;Admin Billing Console (/admin/billing):&lt;/b&gt;&lt;br/&gt;  - &lt;i&gt;Offline Payment Queue:&lt;/i&gt; Review submitted bank transfers, approve (auto-activates subscription), or reject.&lt;br/&gt;  - &lt;i&gt;All Invoices:&lt;/i&gt; Create manual custom invoices, mark paid, void invoices.&lt;br/&gt;  - &lt;i&gt;All Subscriptions:&lt;/i&gt; List all accounts &amp;amp; perform admin overrides on tiers, status, and renewal dates.&lt;br/&gt;  - &lt;i&gt;Plans Management (CRUD):&lt;/i&gt; Create new plans, edit pricing/quotas/features, toggle popular/active status, delete plans.&lt;br/&gt;• &lt;b&gt;System Security:&lt;/b&gt; System Topology (/topology) visualizer and live microservices ping." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fca5a5;align=left;spacing=8;fontSize=11;" vertex="1" parent="fe_role_admin">
           <mxGeometry x="15" y="35" width="990" height="230" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  <!-- ========================================================================= -->
+  <!-- TAB 9: WEBHOOK RUNNER & HMAC CRYPTOGRAPHIC ENGINE                         -->
+  <!-- ========================================================================= -->
+  <diagram id="tab_runner" name="9. Webhook Runner &amp; HMAC Engine">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="run_title" value="&lt;b style='font-size:22px; color:#ffffff;'&gt;WEBHOOK RUNNER (Port 50053) - DISPATCH ENGINE, HMAC-SHA256 &amp;amp; TELEMETRY&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:12px; color:#94a3b8;'&gt;HMAC-SHA256 Digital Signatures, HTTP Dispatcher, Retry Mechanisms, and Local Built-in Mock Receiver&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0e7490;strokeColor=#155e75;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="2080" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 1: APP REPOSITORY & SECRETS -->
+        <mxCell id="run_app_box" value="&lt;b style='font-size:14px; color:#0e7490;'&gt;1. App Module (internal/modules/app/)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ecfeff;strokeColor=#a5f3fc;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="660" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="run_app_text" value="• &lt;b&gt;App Identity:&lt;/b&gt; Generates unique `app_id` (e.g. `app_live_...`) and cryptographic `app_secret`.&lt;br/&gt;• &lt;b&gt;Webhook Signing Key:&lt;/b&gt; Generates or stores custom `webhook_secret` (e.g. `whsec_...`).&lt;br/&gt;• &lt;b&gt;Secret Rotation:&lt;/b&gt; `RotateSecrets` RPC rotates client secret and HMAC signing key independently.&lt;br/&gt;• &lt;b&gt;Repository:&lt;/b&gt; GORM CRUD operations on `apps` table with soft deletes and indexing." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#67e8f9;align=left;spacing=8;fontSize=11;" vertex="1" parent="run_app_box">
+          <mxGeometry x="15" y="35" width="630" height="260" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 2: DISPATCH ENGINE -->
+        <mxCell id="run_disp_box" value="&lt;b style='font-size:14px; color:#0e7490;'&gt;2. Dispatcher Engine (internal/engine/dispatcher.go)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ecfeff;strokeColor=#a5f3fc;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="740" y="140" width="680" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="run_disp_text" value="• &lt;b&gt;HMAC-SHA256 Cryptography:&lt;/b&gt;&lt;br/&gt;  `sig := hmac.New(sha256.New, []byte(secret)).Write([]byte(payload)) &amp;rarr; hex.EncodeToString(sig)`&lt;br/&gt;• &lt;b&gt;Standard Injected Headers:&lt;/b&gt;&lt;br/&gt;  - `X-Webhook-Signature: sha256=&amp;lt;hex_hash&amp;gt;`&lt;br/&gt;  - `X-Webhook-ID: &amp;lt;call_uuid&amp;gt;`&lt;br/&gt;  - `X-Webhook-Event: &amp;lt;event_name&amp;gt;`&lt;br/&gt;  - `X-Webhook-Timestamp: &amp;lt;unix_seconds&amp;gt;`&lt;br/&gt;• &lt;b&gt;HTTP Client:&lt;/b&gt; 15-second timeout, status code &amp;amp; latency tracking, response body capture." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#67e8f9;align=left;spacing=8;fontSize=11;" vertex="1" parent="run_disp_box">
+          <mxGeometry x="15" y="35" width="650" height="260" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 3: TELEMETRY & LOCAL TEST RECEIVER -->
+        <mxCell id="run_rec_box" value="&lt;b style='font-size:14px; color:#0e7490;'&gt;3. Telemetry &amp;amp; Local Test Receiver (api-gateway + runner)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ecfeff;strokeColor=#a5f3fc;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="1460" y="140" width="660" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="run_rec_text" value="• &lt;b&gt;Webhook Call Telemetry:&lt;/b&gt; Records every execution with status (SUCCESS, FAILED, TIMEOUT), HTTP response code, latency_ms, and retry attempts.&lt;br/&gt;• &lt;b&gt;Built-in Local Test Receiver:&lt;/b&gt;&lt;br/&gt;  `POST http://localhost:8080/api/v1/webhooks/test-receiver`&lt;br/&gt;  - Verifies HMAC signature header &amp;amp; returns HTTP 200 OK with formatted JSON receipt.&lt;br/&gt;• &lt;b&gt;UI Integration:&lt;/b&gt; Per-app Webhook Logs modal with live stats, expandable inspection, and 1-click test dispatches." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#67e8f9;align=left;spacing=8;fontSize=11;" vertex="1" parent="run_rec_box">
+          <mxGeometry x="15" y="35" width="630" height="260" as="geometry" />
         </mxCell>
 
       </root>

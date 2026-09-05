@@ -78,10 +78,32 @@ Ensure you have **Go 1.22+**, **Node.js 20+**, and a running **MySQL** instance.
 | **Frontend UI** | [http://localhost:5173](http://localhost:5173) | Vue 3 Web Application (Default admin: `admin@webhook.io` / `password123`) |
 | **API Gateway REST** | [http://localhost:8080](http://localhost:8080) | Base REST API root (`/api/v1`) |
 | **Gateway Health Probe** | [http://localhost:8080/health](http://localhost:8080/health) | Real-time upstream gRPC connectivity & latency diagnostic (Accounts, Subscriptions, Runner) |
+| **Built-in Mock Webhook Receiver** | [http://localhost:8080/api/v1/webhooks/test-receiver](http://localhost:8080/api/v1/webhooks/test-receiver) | Built-in local mock endpoint for testing HMAC webhook delivery |
 | **Accounts gRPC** | `localhost:50051` | gRPC server reflection enabled (Protobuf v1) |
 | **Subscriptions gRPC** | `localhost:50052` | gRPC server reflection enabled (Protobuf v1) |
 | **Webhook Runner gRPC** | `localhost:50053` | gRPC server reflection enabled (Protobuf v1) |
 | **MySQL Database** | `localhost:3307` | Host mapped port (Databases: `webhook_accounts`, `webhook_subscriptions`, `webhook_runner`) |
+
+---
+
+## ⚡ Webhook Dispatching & Testing
+
+### 1. Built-in Local Test Receiver
+The platform includes a built-in webhook receiver mock endpoint for local development:
+- `POST http://localhost:8080/api/v1/webhooks/test-receiver`
+- `POST http://localhost:8080/webhooks/test-receiver`
+
+It automatically reads and confirms HMAC-SHA256 headers (`X-Webhook-Signature`, `X-Webhook-ID`, `X-Webhook-Event`, `X-Webhook-Timestamp`) and returns `HTTP 200 OK`.
+
+### 2. Dispatches with URL Query Parameters
+You can dispatch webhooks via POST or GET using URL Query Parameters:
+```bash
+curl -X POST "http://localhost:8080/api/v1/webhooks/send?app_id=app_live_f4735ddda2a5383c65de1cfb&event_name=order.created&target_url_override=http://localhost:8080/api/v1/webhooks/test-receiver" \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>"
+```
+
+### 3. Per-App Webhook Logs Modal
+On the **Applications (`/apps`)** page in the UI, click **`سجلات الويب هوك` (Webhook Logs)** on any application to open live delivery traces, latency statistics, HMAC headers, and expandable payload details.
 
 ---
 
