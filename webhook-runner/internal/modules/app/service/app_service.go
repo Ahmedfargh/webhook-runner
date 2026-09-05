@@ -46,7 +46,7 @@ func (s *appService) CreateApp(ctx context.Context, userID uuid.UUID, name, webh
 	app := &models.App{
 		UserID:        userID,
 		Name:          name,
-		AppID:         helpers.GenerateAppID(),
+		ClientID:      helpers.GenerateAppID(),
 		AppSecret:     helpers.GenerateAppSecret(),
 		WebhookURL:    webhookURL,
 		WebhookSecret: helpers.GenerateWebhookSecret(),

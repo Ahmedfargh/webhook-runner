@@ -59,7 +59,7 @@ func SeedRunnerData(db *gorm.DB) {
 			ID:            uuid.New(),
 			UserID:        demoUserID,
 			Name:          sa.Name,
-			AppID:         sa.AppID,
+			ClientID:      sa.AppID,
 			AppSecret:     sa.AppSecret,
 			WebhookURL:    sa.WebhookURL,
 			WebhookSecret: sa.WebhookSecret,

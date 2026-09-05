@@ -24,7 +24,7 @@ func (p *appPresenter) ToProto(app *models.App) *pb.App {
 		Id:            app.ID.String(),
 		UserId:        app.UserID.String(),
 		Name:          app.Name,
-		AppId:         app.AppID,
+		AppId:         app.ClientID,
 		AppSecret:     app.AppSecret,
 		WebhookUrl:    app.WebhookURL,
 		WebhookSecret: app.WebhookSecret,

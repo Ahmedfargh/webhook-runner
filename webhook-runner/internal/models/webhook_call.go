@@ -19,7 +19,7 @@ const (
 type WebhookCall struct {
 	ID                 uuid.UUID         `gorm:"type:char(36);primaryKey;" json:"id"`
 	AppID              uuid.UUID         `gorm:"type:char(36);index;not null" json:"app_id"`
-	App                App               `gorm:"foreignKey:AppID;references:ID;constraint:OnDelete:CASCADE;" json:"app"`
+	App                App               `gorm:"foreignKey:AppID;references:ID;-:migration" json:"app"`
 	EventName          string            `gorm:"type:varchar(100);index;not null" json:"event_name"`
 	TargetURL          string            `gorm:"type:varchar(500);not null" json:"target_url"`
 	PayloadJSON        string            `gorm:"type:longtext;not null" json:"payload_json"`
