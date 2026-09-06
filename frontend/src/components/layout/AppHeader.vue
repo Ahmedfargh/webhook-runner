@@ -8,19 +8,6 @@
       </div>
     </div>
 
-    <div class="header-center">
-      <div class="global-search-bar">
-        <Search :size="15" class="search-icon" />
-        <input
-          type="text"
-          :placeholder="t('header.searchPlaceholder')"
-          class="global-search-input"
-          ref="searchInput"
-          @keydown.stop
-        />
-      </div>
-    </div>
-
     <div class="header-right">
       <!-- Language Selector with Country Flags -->
       <LanguageSelector />
@@ -41,14 +28,13 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { t } from '../../locales'
 import LanguageSelector from '../common/LanguageSelector.vue'
-import { Search, Shield, Activity } from 'lucide-vue-next'
+import { Shield, Activity } from 'lucide-vue-next'
 
 const route = useRoute()
-const searchInput = ref(null)
 
 const currentRouteName = computed(() => {
   if (route.path === '/') return t('nav.dashboard')
@@ -57,22 +43,14 @@ const currentRouteName = computed(() => {
   if (route.path === '/roles') return t('nav.roles')
   if (route.path === '/permissions') return t('nav.permissions')
   if (route.path === '/topology') return t('nav.topology')
+  if (route.path === '/audit-logs') return t('nav.auditLogs')
+  if (route.path === '/admin/billing') return t('nav.adminBilling')
+  if (route.path === '/plans') return t('nav.plansPricing')
+  if (route.path === '/subscription') return t('nav.mySubscription')
+  if (route.path === '/invoices') return t('nav.invoices')
+  if (route.path === '/apps') return t('nav.apps')
+  if (route.path === '/webhooks') return t('nav.webhookLogs')
   return route.name || 'Overview'
-})
-
-function handleGlobalKeydown(e) {
-  if (e.key === '/' && document.activeElement !== searchInput.value) {
-    e.preventDefault()
-    searchInput.value?.focus()
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', handleGlobalKeydown)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleGlobalKeydown)
 })
 </script>
 
@@ -113,51 +91,6 @@ onUnmounted(() => {
 .breadcrumb-current {
   color: var(--text-primary);
   font-weight: 600;
-}
-
-.header-center {
-  flex: 1;
-  max-width: 440px;
-}
-
-.global-search-bar {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: 0.75rem;
-  color: var(--text-muted);
-  pointer-events: none;
-}
-
-[dir="rtl"] .search-icon {
-  left: auto;
-  right: 0.75rem;
-}
-
-.global-search-input {
-  width: 100%;
-  padding: 0.45rem 0.75rem 0.45rem 2.25rem;
-  font-size: 12px;
-  background-color: var(--bg-card-muted);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-full);
-  color: var(--text-primary);
-  outline: none;
-  transition: all var(--transition-fast);
-}
-
-[dir="rtl"] .global-search-input {
-  padding: 0.45rem 2.25rem 0.45rem 0.75rem;
-}
-
-.global-search-input:focus {
-  background-color: #ffffff;
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px var(--primary-focus);
 }
 
 .header-right {

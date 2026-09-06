@@ -102,6 +102,11 @@
           <Network :size="18" />
           <span v-if="!isCollapsed">{{ t('nav.topology') }}</span>
         </router-link>
+
+        <router-link to="/audit-logs" class="nav-item" active-class="nav-item-active">
+          <History :size="18" />
+          <span v-if="!isCollapsed">{{ t('nav.auditLogs') }}</span>
+        </router-link>
       </template>
     </nav>
 
@@ -143,6 +148,7 @@ import {
   KeyRound,
   Lock,
   Network,
+  History,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,

@@ -19,43 +19,42 @@ You can also visually open and inspect the diagram with all 8 dedicated tabs in 
 ## 1. Global System Architecture & Mesh
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                             LAYER 1: CLIENT FRONTEND                             │
-│                         Vue 3 / Vite SPA (Port 5173)                             │
-└────────────────────────────────────────┬─────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                             LAYER 1: CLIENT FRONTEND                                     │
+│                         Vue 3 / Vite SPA (Port 5173)                                     │
+└────────────────────────────────────────┬─────────────────────────────────────────────────┘
                                          │
                                          │ HTTP/1.1 & HTTP/2 (REST / JSON)
                                          │ Authorization: Bearer <JWT_TOKEN>
                                          ▼
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                            LAYER 2: WEBHOOK API GATEWAY                          │
-│                           Go / Gin Engine (Port 8080)                            │
-│                                                                                  │
-│   • Terminates client JWT tokens & injects context (userID, role)                │
-│   • Injects Service Auth Headers:                                                │
-│       - X-Service-Name: api-gateway                                              │
-│       - Authorization: Bearer <AUTH_TOKEN>                                       │
-└───────────────────────┬──────────────────────────────────┬───────────────────────┘
-                        │                                  │
-      gRPC (Protobuf v1)│Port 50051      gRPC (Protobuf v1)│Port 50052
-                        ▼                                  ▼
-┌──────────────────────────────────┐    ┌──────────────────────────────────────────┐
-│    LAYER 3A: ACCOUNTS SERVICE    │    │      LAYER 3B: SUBSCRIPTIONS SERVICE     │
-│   Go / gRPC Server (Port 50051)  │    │       Go / gRPC Server (Port 50052)      │
-│                                  │    │                                          │
-│ • User / Admin Auth & Passwords  │    │ • Plans CRUD & Feature Quotas            │
-│ • Roles & Fine-Grained Perms     │    │ • Subscriptions Lifecycle & Overrides    │
-│ • Country Registry               │    │ • Invoicing & Offline Bank Wire Queue    │
-└────────────────┬─────────────────┘    └──────────────────┬───────────────────────┘
-                 │                                         │
-                 │ TCP (Port 3306)                         │ TCP (Port 3306)
-                 ▼                                         ▼
-┌──────────────────────────────────┐    ┌──────────────────────────────────────────┐
-│      MySQL: webhook_accounts     │    │      MySQL: webhook_subscriptions        │
-│                                  │    │                                          │
-│ • users, admins, roles           │    │ • plans, subscriptions, invoices         │
-│ • permissions, admin_roles       │    │ • invoice_items, manual_payment_records  │
-└──────────────────────────────────┘    └──────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                            LAYER 2: WEBHOOK API GATEWAY                                  │
+│                           Go / Gin Engine (Port 8080)                                    │
+│                                                                                          │
+│   • Terminates client JWT tokens & injects context (userID, role)                        │
+│   • Asynchronous Webhook Streaming via Apache Kafka (topic: webhook-dispatches)          │
+│   • Audit Trail Interception & Emission (topic: audit-events)                            │
+│   • Injects Service Auth Headers (X-Service-Name, Authorization: Bearer <AUTH_TOKEN>)    │
+└────────────┬─────────────┬─────────────┬─────────────┬─────────────────────────────────┘
+             │             │             │             │
+    gRPC v1  │:50051       │:50052       │:50053       │:50054 (Kafka/gRPC)
+             ▼             ▼             ▼             ▼
+┌────────────┴─────────────┬─────────────┴─────────────┴───────────────────────────────────┐
+│                          │                                                               │
+│LAYER 3A: ACCOUNTS SERVICE│  LAYER 3B: SUBSCRIPTIONS         LAYER 3C: WEBHOOK RUNNER     │
+│Go / gRPC (Port 50051)    │  Go / gRPC (Port 50052)          Go / gRPC & Kafka (:50053)   │
+│                          │                                                               │
+│• User & Admin Auth       │  • Plans & Feature Quotas        • Kafka Consumer (Dispatches)│
+│• Roles & Fine Perms      │  • Subscriptions Lifecycle       • HMAC-SHA256 Signatures     │
+│• Country Registry        │  • Invoices & Manual Pay         • Outgoing HTTP Webhooks     │
+│• Emits to audit-events   │  • Emits to audit-events         • Telemetry Logs & Results   │
+└────────────┬─────────────┘  └────────────┬─────────────┘  └──────────────┬───────────────┘
+             │                             │                               │
+    TCP :3306│                    TCP :3306│                      TCP :3306│
+             ▼                             ▼                               ▼
+┌──────────────────────────┐  ┌──────────────────────────┐  ┌──────────────────────────────┐
+│ MySQL: webhook_accounts  │  │ MySQL: webhook_subscript │  │ MySQL: webhook_runner        │
+└──────────────────────────┘  └──────────────────────────┘  └──────────────────────────────┘
 ```
 
 ---

@@ -20,9 +20,14 @@
           <Zap :size="14" class="text-warning" />
           <span>{{ t('auth.quickEval') }}</span>
         </div>
-        <button type="button" class="btn btn-sm btn-secondary" @click="fillDemoCreds">
-          {{ t('auth.fillDemo') }}
-        </button>
+        <div class="demo-btn-group">
+          <button type="button" class="btn btn-sm btn-secondary" @click="fillAdminCreds">
+            Admin
+          </button>
+          <button type="button" class="btn btn-sm btn-primary" @click="fillUserCreds">
+            User
+          </button>
+        </div>
       </div>
 
       <!-- Login Form -->
@@ -85,10 +90,16 @@ const toastStore = useToastStore()
 const email = ref('')
 const password = ref('')
 
-function fillDemoCreds() {
+function fillAdminCreds() {
   email.value = 'admin@example.com'
   password.value = 'Secret123456'
-  toastStore.info('Demo credentials prefilled!')
+  toastStore.info('Admin demo credentials filled!')
+}
+
+function fillUserCreds() {
+  email.value = 'john.doe@example.com'
+  password.value = 'password123'
+  toastStore.info('Regular user credentials filled!')
 }
 
 async function handleLogin() {
@@ -180,6 +191,12 @@ async function handleLogin() {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
+}
+
+.demo-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .input-with-icon {

@@ -12,6 +12,7 @@ import InvoicesView from '../views/InvoicesView.vue'
 import AdminBillingView from '../views/AdminBillingView.vue'
 import AppsView from '../views/AppsView.vue'
 import WebhookLogsView from '../views/WebhookLogsView.vue'
+import AuditLogsView from '../views/AuditLogsView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 
@@ -46,6 +47,12 @@ const routes = [
         path: 'webhooks/logs',
         name: 'WebhookLogs',
         component: WebhookLogsView,
+      },
+      {
+        path: 'audit-logs',
+        name: 'AuditLogs',
+        component: AuditLogsView,
+        meta: { requiresAdmin: true },
       },
       {
         path: 'users',

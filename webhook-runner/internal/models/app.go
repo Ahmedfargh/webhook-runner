@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,5 +26,9 @@ func (a *App) BeforeCreate(tx *gorm.DB) error {
 	if a.ID == uuid.Nil {
 		a.ID = uuid.New()
 	}
+	return nil
+}
+func (a *App) AfterFind(tx *gorm.DB) error {
+	fmt.Println("golang is good:-", a.UserID)
 	return nil
 }

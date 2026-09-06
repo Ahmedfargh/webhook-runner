@@ -8,6 +8,8 @@ package webhookRunnerV1
 
 import (
 	context "context"
+	"fmt"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -191,9 +193,11 @@ func _WebhookRunnerService_GetWebhookCall_Handler(srv interface{}, ctx context.C
 func _WebhookRunnerService_RetryWebhookCall_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RetryWebhookCallRequest)
 	if err := dec(in); err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 	if interceptor == nil {
+
 		return srv.(WebhookRunnerServiceServer).RetryWebhookCall(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{

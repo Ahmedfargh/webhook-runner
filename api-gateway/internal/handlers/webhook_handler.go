@@ -2,23 +2,32 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	pb "webhookApiGateway/api/proto/runner"
 	"webhookApiGateway/internal/clients"
+	"webhookApiGateway/internal/kafka"
 	"webhookApiGateway/internal/middleware"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type WebhookHandler struct {
-	runnerClient *clients.RunnerClient
+	runnerClient  *clients.RunnerClient
+	kafkaProducer *kafka.KafkaProducer
 }
 
-func NewWebhookHandler(runnerClient *clients.RunnerClient) *WebhookHandler {
-	return &WebhookHandler{runnerClient: runnerClient}
+func NewWebhookHandler(runnerClient *clients.RunnerClient, kafkaProducer *kafka.KafkaProducer) *WebhookHandler {
+	return &WebhookHandler{
+		runnerClient:  runnerClient,
+		kafkaProducer: kafkaProducer,
+	}
 }
 
 // TestReceiver is a built-in mock destination webhook endpoint for local development & testing
@@ -49,6 +58,7 @@ type SendWebhookInput struct {
 	Payload       interface{}       `json:"payload"`
 	CustomHeaders map[string]string `json:"custom_headers"`
 	TargetURL     string            `json:"target_url_override"`
+	Async         *bool             `json:"async,omitempty"`
 }
 
 func (h *WebhookHandler) SendWebhook(c *gin.Context) {
@@ -96,6 +106,46 @@ func (h *WebhookHandler) SendWebhook(c *gin.Context) {
 		}
 	}
 
+	// Determine dispatch mode: Kafka vs Synchronous gRPC
+	forceSync := c.Query("sync") == "true" || c.Query("sync") == "1" || (input.Async != nil && !*input.Async)
+	useKafka := h.kafkaProducer != nil && h.kafkaProducer.IsEnabled() && !forceSync
+
+	if useKafka {
+		callID := fmt.Sprintf("wh_call_%s", strings.ReplaceAll(uuid.New().String(), "-", "")[:16])
+		event := &kafka.WebhookDispatchEvent{
+			CallID:            callID,
+			AppID:             input.AppID,
+			EventName:         input.EventName,
+			PayloadJSON:       payloadJSON,
+			CustomHeaders:     input.CustomHeaders,
+			TargetURLOverride: input.TargetURL,
+			CreatedAt:         time.Now().UTC(),
+			Timestamp:         time.Now().Unix(),
+		}
+
+		err := h.kafkaProducer.PublishWebhookDispatch(c.Request.Context(), event)
+		if err == nil {
+			c.JSON(http.StatusAccepted, gin.H{
+				"data": gin.H{
+					"id":                  callID,
+					"app_id":              input.AppID,
+					"event_name":          input.EventName,
+					"status":              "QUEUED",
+					"target_url_override": input.TargetURL,
+					"dispatch_mode":       "kafka_stream",
+					"timestamp":           event.Timestamp,
+				},
+				"success": true,
+				"message": "Webhook dispatch event published to Kafka queue for processing",
+			})
+			return
+		}
+
+		// Graceful fallback to gRPC on Kafka write error
+		log.Printf("[API Gateway] Kafka publish failed (%v), falling back to synchronous gRPC dispatch\n", err)
+	}
+
+	// Synchronous gRPC dispatch (Direct or Fallback)
 	res, err := h.runnerClient.Webhook.SendWebhook(c.Request.Context(), &pb.SendWebhookRequest{
 		AppId:             input.AppID,
 		EventName:         input.EventName,
@@ -152,6 +202,10 @@ func (h *WebhookHandler) ListWebhookCalls(c *gin.Context) {
 
 func (h *WebhookHandler) GetWebhookCall(c *gin.Context) {
 	userID := c.GetString("user_id")
+	role := c.GetString("user_role")
+	if role == "admin" || role == "administrator" {
+		userID = ""
+	}
 	id := c.Param("id")
 
 	res, err := h.runnerClient.Webhook.GetWebhookCall(c.Request.Context(), &pb.GetWebhookCallRequest{
@@ -168,6 +222,10 @@ func (h *WebhookHandler) GetWebhookCall(c *gin.Context) {
 
 func (h *WebhookHandler) RetryWebhookCall(c *gin.Context) {
 	userID := c.GetString("user_id")
+	role := c.GetString("user_role")
+	if role == "admin" || role == "administrator" {
+		userID = ""
+	}
 	id := c.Param("id")
 
 	res, err := h.runnerClient.Webhook.RetryWebhookCall(c.Request.Context(), &pb.RetryWebhookCallRequest{
@@ -175,6 +233,7 @@ func (h *WebhookHandler) RetryWebhookCall(c *gin.Context) {
 		UserId: userID,
 	})
 	if err != nil {
+		fmt.Println(err)
 		middleware.HandleGRPCError(c, err)
 		return
 	}

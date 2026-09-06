@@ -71,7 +71,10 @@
         <mxCell id="ov_sec_box" value="&lt;b style='font-size:14px;'&gt;SECURITY &amp;amp; ZERO-TRUST BOUNDARY PRINCIPLES:&lt;/b&gt;&lt;hr/&gt;1. &lt;b&gt;End-User Isolation:&lt;/b&gt; End-users and frontend clients NEVER connect directly to gRPC ports or MySQL databases.&lt;br/&gt;2. &lt;b&gt;Caller Whitelisting:&lt;/b&gt; Accounts, Subscriptions, and Runner gRPC services enforce an incoming &lt;i&gt;X-Service-Name&lt;/i&gt; whitelist (&lt;code&gt;ALLOWED_SERVICES=api-gateway,webhook-runner&lt;/code&gt;). Unidentified calls are rejected.&lt;br/&gt;3. &lt;b&gt;Shared Cryptographic Secret:&lt;/b&gt; Every inter-service gRPC call passes a pre-shared 256-bit &lt;i&gt;AUTH_TOKEN&lt;/i&gt; in gRPC context metadata." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f172a;strokeColor=#1e293b;align=left;spacing=12;fontSize=11;fontColor=#f8fafc;" vertex="1" parent="1">
           <mxGeometry x="40" y="610" width="2080" height="100" as="geometry" />
         </mxCell>
-      </root>
+      <mxCell id="ov_run_script" value="&lt;b&gt;run.sh (Ctrl+C to stop all services)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#ff0000;align=center;" vertex="1" parent="1">
+  <mxGeometry x="40" y="720" width="600" height="80" as="geometry"/>
+</mxCell>
+</root>
     </mxGraphModel>
   </diagram>
 

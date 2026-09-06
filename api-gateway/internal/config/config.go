@@ -15,6 +15,8 @@ type Config struct {
 	SubscriptionsGRPCPort string
 	RunnerGRPCHost        string
 	RunnerGRPCPort        string
+	AuditGRPCHost         string
+	AuditGRPCPort         string
 	ServiceName           string
 	ServiceToken          string
 	JWTSecret             string
@@ -24,6 +26,11 @@ type Config struct {
 	DBUser                string
 	DBPassword            string
 	DBName                string
+	KafkaBrokers          string
+	KafkaTopicDispatch    string
+	KafkaTopicResults     string
+	KafkaTopicAudit       string
+	KafkaEnabled          bool
 }
 
 func LoadConfig() *Config {
@@ -38,6 +45,8 @@ func LoadConfig() *Config {
 	subscriptionsPort := getEnv("SUBSCRIPTIONS_GRPC_PORT", "50052")
 	runnerHost := getEnv("RUNNER_GRPC_HOST", "localhost")
 	runnerPort := getEnv("RUNNER_GRPC_PORT", "50053")
+	auditHost := getEnv("AUDIT_GRPC_HOST", "localhost")
+	auditPort := getEnv("AUDIT_GRPC_PORT", "50054")
 	serviceName := getEnv("SERVICE_NAME", "api-gateway")
 	serviceToken := getEnv("SERVICE_TOKEN", "4f7f956f34bcfa0c9a55aff6b98c4e1d87e1da6d0d33f5021b5937123d7330c1")
 	jwtSecret := getEnv("JWT_SECRET", "api-gateway-super-secret-jwt-key-2026")
@@ -49,6 +58,12 @@ func LoadConfig() *Config {
 	dbPassword := getEnv("DB_PASSWORD", "")
 	dbName := getEnv("DB_NAME", "webhook_accounts")
 
+	kafkaBrokers := getEnv("KAFKA_BROKERS", "localhost:9092")
+	kafkaTopicDispatch := getEnv("KAFKA_TOPIC_WEBHOOK_DISPATCH", "webhook-dispatches")
+	kafkaTopicResults := getEnv("KAFKA_TOPIC_WEBHOOK_RESULTS", "webhook-results")
+	kafkaTopicAudit := getEnv("KAFKA_TOPIC_AUDIT_EVENTS", "audit-events")
+	kafkaEnabled := getEnv("KAFKA_ENABLED", "true") == "true" || getEnv("KAFKA_ENABLED", "1") == "1"
+
 	return &Config{
 		Port:                  port,
 		AccountsGRPCHost:      accountsHost,
@@ -57,6 +72,8 @@ func LoadConfig() *Config {
 		SubscriptionsGRPCPort: subscriptionsPort,
 		RunnerGRPCHost:        runnerHost,
 		RunnerGRPCPort:        runnerPort,
+		AuditGRPCHost:         auditHost,
+		AuditGRPCPort:         auditPort,
 		ServiceName:           serviceName,
 		ServiceToken:          serviceToken,
 		JWTSecret:             jwtSecret,
@@ -66,6 +83,11 @@ func LoadConfig() *Config {
 		DBUser:                dbUser,
 		DBPassword:            dbPassword,
 		DBName:                dbName,
+		KafkaBrokers:          kafkaBrokers,
+		KafkaTopicDispatch:    kafkaTopicDispatch,
+		KafkaTopicResults:     kafkaTopicResults,
+		KafkaTopicAudit:       kafkaTopicAudit,
+		KafkaEnabled:          kafkaEnabled,
 	}
 }
 

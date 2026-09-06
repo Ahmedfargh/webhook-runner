@@ -6,6 +6,7 @@ import (
 
 	"webhookApiGateway/internal/clients"
 	"webhookApiGateway/internal/config"
+	"webhookApiGateway/internal/kafka"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,6 +15,7 @@ type HealthHandler struct {
 	accountsClient      *clients.AccountsClient
 	subscriptionsClient *clients.SubscriptionsClient
 	runnerClient        *clients.RunnerClient
+	kafkaProducer       *kafka.KafkaProducer
 	cfg                 *config.Config
 }
 
@@ -21,12 +23,14 @@ func NewHealthHandler(
 	accountsClient *clients.AccountsClient,
 	subscriptionsClient *clients.SubscriptionsClient,
 	runnerClient *clients.RunnerClient,
+	kafkaProducer *kafka.KafkaProducer,
 	cfg *config.Config,
 ) *HealthHandler {
 	return &HealthHandler{
 		accountsClient:      accountsClient,
 		subscriptionsClient: subscriptionsClient,
 		runnerClient:        runnerClient,
+		kafkaProducer:       kafkaProducer,
 		cfg:                 cfg,
 	}
 }
@@ -54,6 +58,19 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 	if runErr != nil {
 		runnerStatus = "degraded"
 		runErrMsg = runErr.Error()
+	}
+
+	// Check Kafka Status
+	kafkaStatus := "disabled"
+	var kafkaErrMsg string
+	if h.kafkaProducer != nil && h.kafkaProducer.IsEnabled() {
+		kErr := h.kafkaProducer.Ping(c.Request.Context())
+		if kErr != nil {
+			kafkaStatus = "degraded"
+			kafkaErrMsg = kErr.Error()
+		} else {
+			kafkaStatus = "healthy"
+		}
 	}
 
 	response := gin.H{
@@ -84,6 +101,13 @@ func (h *HealthHandler) HealthCheck(c *gin.Context) {
 				"service_identity": h.cfg.ServiceName,
 				"latency_ms":       runLatency.Milliseconds(),
 				"error":            runErrMsg,
+			},
+			"kafka_event_stream": gin.H{
+				"status":         kafkaStatus,
+				"brokers":        h.cfg.KafkaBrokers,
+				"topic_dispatch": h.cfg.KafkaTopicDispatch,
+				"topic_results":  h.cfg.KafkaTopicResults,
+				"error":          kafkaErrMsg,
 			},
 		},
 	}

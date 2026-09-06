@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package audit.v1;
+
+option go_package = "auditService/api/proto/v1;auditv1";
+
+service AuditService {
+  rpc RecordAuditLog (RecordAuditLogRequest) returns (RecordAuditLogResponse);
+  rpc ListAuditLogs (ListAuditLogsRequest) returns (ListAuditLogsResponse);
+  rpc GetAuditLog (GetAuditLogRequest) returns (GetAuditLogResponse);
+}
+
+message AuditLog {
+  string id = 1;
+  string actor_id = 2;
+  string actor_type = 3;
+  string actor_name = 4;
+  string actor_email = 5;
+  string service_name = 6;
+  string action = 7;
+  string resource = 8;
+  string resource_id = 9;
+  string before_json = 10;
+  string after_json = 11;
+  string ip_address = 12;
+  string user_agent = 13;
+  string status = 14;
+  string error_message = 15;
+  string created_at = 16;
+}
+
+message RecordAuditLogRequest {
+  string actor_id = 1;
+  string actor_type = 2;
+  string actor_name = 3;
+  string actor_email = 4;
+  string service_name = 5;
+  string action = 6;
+  string resource = 7;
+  string resource_id = 8;
+  string before_json = 9;
+  string after_json = 10;
+  string ip_address = 11;
+  string user_agent = 12;
+  string status = 13;
+  string error_message = 14;
+}
+
+message RecordAuditLogResponse {
+  bool success = 1;
+  string message = 2;
+  AuditLog audit_log = 3;
+}
+
+message ListAuditLogsRequest {
+  string actor_id = 1;
+  string service_name = 2;
+  string resource = 3;
+  string action = 4;
+  string status = 5;
+  string search = 6;
+  string start_date = 7;
+  string end_date = 8;
+  int32 page = 9;
+  int32 limit = 10;
+}
+
+message ListAuditLogsResponse {
+  repeated AuditLog audit_logs = 1;
+  int64 total = 2;
+  int32 page = 3;
+  int32 limit = 4;
+}
+
+message GetAuditLogRequest {
+  string id = 1;
+}
+
+message GetAuditLogResponse {
+  AuditLog audit_log = 1;
+}

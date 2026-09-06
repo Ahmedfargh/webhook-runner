@@ -54,6 +54,10 @@ func (h *AppHandler) CreateApp(c *gin.Context) {
 
 func (h *AppHandler) GetApp(c *gin.Context) {
 	userID := c.GetString("user_id")
+	role := c.GetString("user_role")
+	if role == "admin" || role == "administrator" {
+		userID = ""
+	}
 	id := c.Param("id")
 
 	res, err := h.runnerClient.App.GetApp(c.Request.Context(), &pb.GetAppRequest{
@@ -111,6 +115,10 @@ type UpdateAppInput struct {
 
 func (h *AppHandler) UpdateApp(c *gin.Context) {
 	userID := c.GetString("user_id")
+	role := c.GetString("user_role")
+	if role == "admin" || role == "administrator" {
+		userID = ""
+	}
 	id := c.Param("id")
 
 	var input UpdateAppInput
@@ -141,6 +149,10 @@ func (h *AppHandler) UpdateApp(c *gin.Context) {
 
 func (h *AppHandler) DeleteApp(c *gin.Context) {
 	userID := c.GetString("user_id")
+	role := c.GetString("user_role")
+	if role == "admin" || role == "administrator" {
+		userID = ""
+	}
 	id := c.Param("id")
 
 	res, err := h.runnerClient.App.DeleteApp(c.Request.Context(), &pb.DeleteAppRequest{
@@ -162,6 +174,10 @@ type RotateSecretInput struct {
 
 func (h *AppHandler) RotateSecrets(c *gin.Context) {
 	userID := c.GetString("user_id")
+	role := c.GetString("user_role")
+	if role == "admin" || role == "administrator" {
+		userID = ""
+	}
 	id := c.Param("id")
 
 	var input RotateSecretInput
