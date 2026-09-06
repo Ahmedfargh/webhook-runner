@@ -26,35 +26,43 @@ You can also visually open and inspect the diagram with all 8 dedicated tabs in 
                                          │
                                          │ HTTP/1.1 & HTTP/2 (REST / JSON)
                                          │ Authorization: Bearer <JWT_TOKEN>
+                                         │ Headers: X-Request-ID, X-Trace-ID
                                          ▼
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │                            LAYER 2: WEBHOOK API GATEWAY                                  │
 │                           Go / Gin Engine (Port 8080)                                    │
 │                                                                                          │
+│   • Generates/extracts unique request ID (req-<uuid>) & initializes SpanCollector        │
 │   • Terminates client JWT tokens & injects context (userID, role)                        │
-│   • Asynchronous Webhook Streaming via Apache Kafka (topic: webhook-dispatches)          │
-│   • Audit Trail Interception & Emission (topic: audit-events)                            │
-│   • Injects Service Auth Headers (X-Service-Name, Authorization: Bearer <AUTH_TOKEN>)    │
-└────────────┬─────────────┬─────────────┬─────────────┬─────────────────────────────────┘
-             │             │             │             │
-    gRPC v1  │:50051       │:50052       │:50053       │:50054 (Kafka/gRPC)
-             ▼             ▼             ▼             ▼
-┌────────────┴─────────────┬─────────────┴─────────────┴───────────────────────────────────┐
-│                          │                                                               │
-│LAYER 3A: ACCOUNTS SERVICE│  LAYER 3B: SUBSCRIPTIONS         LAYER 3C: WEBHOOK RUNNER     │
-│Go / gRPC (Port 50051)    │  Go / gRPC (Port 50052)          Go / gRPC & Kafka (:50053)   │
-│                          │                                                               │
-│• User & Admin Auth       │  • Plans & Feature Quotas        • Kafka Consumer (Dispatches)│
-│• Roles & Fine Perms      │  • Subscriptions Lifecycle       • HMAC-SHA256 Signatures     │
-│• Country Registry        │  • Invoices & Manual Pay         • Outgoing HTTP Webhooks     │
-│• Emits to audit-events   │  • Emits to audit-events         • Telemetry Logs & Results   │
-└────────────┬─────────────┘  └────────────┬─────────────┘  └──────────────┬───────────────┘
-             │                             │                               │
-    TCP :3306│                    TCP :3306│                      TCP :3306│
-             ▼                             ▼                               ▼
-┌──────────────────────────┐  ┌──────────────────────────┐  ┌──────────────────────────────┐
-│ MySQL: webhook_accounts  │  │ MySQL: webhook_subscript │  │ MySQL: webhook_runner        │
-└──────────────────────────┘  └──────────────────────────┘  └──────────────────────────────┘
+│   • Intercepts response status code, sanitizes payloads, and computes lifetime_ms        │
+│   • Injects Service Auth Headers (X-Service-Name, x-request-id, Bearer <AUTH_TOKEN>)     │
+│   • Asynchronous Kafka Telemetry & Event Streaming:                                      │
+│       ├── topic: http-request-traces (non-blocking request lifecycle traces)             │
+│       ├── topic: webhook-dispatches  (background webhook executions)                     │
+│       └── topic: audit-events        (administrative & data mutation audit logs)         │
+└──────┬─────────────┬─────────────┬─────────────┬─────────────┬───────────────────────────┘
+       │             │             │             │             │
+  gRPC │:50051       │:50052       │:50053       │:50054       │:50055
+       ▼             ▼             ▼             ▼             ▼
+┌──────┴──────┐┌─────┴──────┐┌─────┴──────┐┌─────┴──────┐┌─────┴──────────────┐
+│  LAYER 3A:  ││  LAYER 3B: ││  LAYER 3C: ││  LAYER 3D: ││     LAYER 3E:      │
+│  ACCOUNTS   ││SUBSCRIPTION││  WEBHOOK   ││   AUDIT    ││  REQUEST TRACKER   │
+│   SERVICE   ││   SERVICE  ││   RUNNER   ││  SERVICE   ││     SERVICE        │
+│ (Port 50051)││(Port 50052)││(Port 50053)││(Port 50054)││   (Port 50055)     │
+│             ││            ││            ││            ││                    │
+│• Identity   ││• Plans CRUD││• App Mgmt  ││• Kafka     ││• Kafka Batch       │
+│• Roles/Perms││• Billing   ││• HMAC Sign ││  Consumer  ││  Consumer (Traces) │
+│• RBAC Auth  ││• Invoicing ││• Dispatch  ││• Diff Logs ││• APM Telemetry     │
+│• Audit Emit ││• Audit Emit││• Telemetry ││• Query RPC ││• Latency Percentile│
+└──────┬──────┘└─────┬──────┘└─────┬──────┘└─────┬──────┘└─────┬──────────────┘
+       │             │             │             │             │
+  TCP  │:3306   TCP  │:3306   TCP  │:3306   TCP  │:3306   TCP  │:3306
+       ▼             ▼             ▼             ▼             ▼
+┌─────────────┐┌────────────┐┌────────────┐┌────────────┐┌────────────────────┐
+│   MySQL:    ││   MySQL:   ││   MySQL:   ││   MySQL:   ││       MySQL:       │
+│   webhook_  ││  webhook_  ││  webhook_  ││  webhook_  ││      webhook_      │
+│   accounts  ││subscriptns ││   runner   ││   audit    ││  request_tracker   │
+└─────────────┘└────────────┘└────────────┘└────────────┘└────────────────────┘
 ```
 
 ---
@@ -214,6 +222,59 @@ erDiagram
         text admin_notes
         datetime created_at
         datetime updated_at
+    }
+```
+
+### Database 4: `webhook_audit` (MySQL 8.0)
+```mermaid
+erDiagram
+    AUDIT_LOGS {
+        varchar(64) id PK
+        varchar(64) actor_id INDEX
+        varchar(32) actor_type INDEX
+        varchar(128) actor_name
+        varchar(128) actor_email INDEX
+        varchar(64) service_name INDEX
+        varchar(64) action INDEX
+        varchar(64) resource INDEX
+        varchar(64) resource_id INDEX
+        text before_json
+        text after_json
+        varchar(64) ip_address
+        varchar(512) user_agent
+        varchar(32) status
+        text error_message
+        datetime created_at INDEX
+    }
+```
+
+### Database 5: `webhook_request_tracker` (MySQL 8.0)
+```mermaid
+erDiagram
+    REQUEST_TRACES {
+        varchar(64) id PK
+        varchar(128) trace_id INDEX
+        varchar(128) request_id INDEX
+        varchar(32) actor_type INDEX
+        varchar(64) actor_id INDEX
+        varchar(128) actor_name
+        varchar(128) actor_email INDEX
+        varchar(64) actor_role
+        varchar(64) service_name
+        varchar(16) method INDEX
+        varchar(512) path
+        varchar(256) route INDEX
+        text query_params
+        varchar(64) client_ip INDEX
+        varchar(512) user_agent
+        int status_code INDEX
+        double lifetime_ms INDEX
+        mediumtext request_body
+        mediumtext response_body
+        text error_message
+        longtext spans_json
+        datetime received_at INDEX
+        datetime completed_at
     }
 ```
 

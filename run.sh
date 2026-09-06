@@ -26,9 +26,9 @@ echo -e "${BOLD}${CYAN}=========================================================
 
 # Ensure MySQL databases exist
 if command -v mysql &> /dev/null; then
-    mysql -u root -e "CREATE DATABASE IF NOT EXISTS webhook_accounts; CREATE DATABASE IF NOT EXISTS webhook_subscriptions; CREATE DATABASE IF NOT EXISTS webhook_runner; CREATE DATABASE IF NOT EXISTS webhook_audit;" 2>/dev/null || true
+    mysql -u root -e "CREATE DATABASE IF NOT EXISTS webhook_accounts; CREATE DATABASE IF NOT EXISTS webhook_subscriptions; CREATE DATABASE IF NOT EXISTS webhook_runner; CREATE DATABASE IF NOT EXISTS webhook_audit; CREATE DATABASE IF NOT EXISTS webhook_request_tracker;" 2>/dev/null || true
 elif command -v mariadb &> /dev/null; then
-    mariadb -u root -e "CREATE DATABASE IF NOT EXISTS webhook_accounts; CREATE DATABASE IF NOT EXISTS webhook_subscriptions; CREATE DATABASE IF NOT EXISTS webhook_runner; CREATE DATABASE IF NOT EXISTS webhook_audit;" 2>/dev/null || true
+    mariadb -u root -e "CREATE DATABASE IF NOT EXISTS webhook_accounts; CREATE DATABASE IF NOT EXISTS webhook_subscriptions; CREATE DATABASE IF NOT EXISTS webhook_runner; CREATE DATABASE IF NOT EXISTS webhook_audit; CREATE DATABASE IF NOT EXISTS webhook_request_tracker;" 2>/dev/null || true
 fi
 
 # Ensure Kafka broker is running or prompt user
@@ -123,6 +123,24 @@ KAFKA_ENABLED=true
 EOF
 fi
 
+if [ ! -f "$ROOT_DIR/request-tracker-service/.env" ]; then
+    echo -e "${YELLOW}[Notice] request-tracker-service/.env not found, generating default config...${NC}"
+    cat <<EOF > "$ROOT_DIR/request-tracker-service/.env"
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=webhook_request_tracker
+GRPC_PORT=50055
+AUTH_TOKEN=4f7f956f34bcfa0c9a55aff6b98c4e1d87e1da6d0d33f5021b5937123d7330c1
+ALLOWED_SERVICES=api-gateway,accounts,subscriptions,webhook-runner,audit-service,request-tracker-service
+KAFKA_BROKERS=localhost:9092
+KAFKA_TOPIC_REQUEST_TRACES=http-request-traces
+KAFKA_REQUEST_TRACKER_GROUP_ID=request-tracker-group
+KAFKA_ENABLED=true
+EOF
+fi
+
 if [ ! -f "$ROOT_DIR/api-gateway/.env" ]; then
     echo -e "${YELLOW}[Notice] api-gateway/.env not found, generating default config...${NC}"
     cat <<EOF > "$ROOT_DIR/api-gateway/.env"
@@ -135,6 +153,8 @@ RUNNER_GRPC_HOST=localhost
 RUNNER_GRPC_PORT=50053
 AUDIT_GRPC_HOST=localhost
 AUDIT_GRPC_PORT=50054
+REQUEST_TRACKER_GRPC_HOST=localhost
+REQUEST_TRACKER_GRPC_PORT=50055
 SERVICE_NAME=api-gateway
 SERVICE_TOKEN=4f7f956f34bcfa0c9a55aff6b98c4e1d87e1da6d0d33f5021b5937123d7330c1
 JWT_SECRET=api-gateway-super-secret-jwt-key-2026
@@ -143,6 +163,7 @@ KAFKA_BROKERS=localhost:9092
 KAFKA_TOPIC_WEBHOOK_DISPATCH=webhook-dispatches
 KAFKA_TOPIC_WEBHOOK_RESULTS=webhook-results
 KAFKA_TOPIC_AUDIT_EVENTS=audit-events
+KAFKA_TOPIC_REQUEST_TRACES=http-request-traces
 KAFKA_ENABLED=true
 EOF
 fi
@@ -172,7 +193,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM EXIT
 
 # 1. Start Accounts gRPC Service
-echo -e "${BLUE}▶ [1/6] Starting Accounts gRPC Service on port 50051...${NC}"
+echo -e "${BLUE}▶ [1/7] Starting Accounts gRPC Service on port 50051...${NC}"
 (
     cd "$ROOT_DIR/accounts"
     go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${BLUE}[Accounts gRPC]${NC}      ")/"
@@ -180,7 +201,7 @@ echo -e "${BLUE}▶ [1/6] Starting Accounts gRPC Service on port 50051...${NC}"
 PIDS+=($!)
 
 # 2. Start Subscriptions gRPC Service
-echo -e "${PURPLE}▶ [2/6] Starting Subscriptions gRPC Service on port 50052...${NC}"
+echo -e "${PURPLE}▶ [2/7] Starting Subscriptions gRPC Service on port 50052...${NC}"
 (
     cd "$ROOT_DIR/subscriptions"
     go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${PURPLE}[Subscriptions gRPC]${NC} ")/"
@@ -188,7 +209,7 @@ echo -e "${PURPLE}▶ [2/6] Starting Subscriptions gRPC Service on port 50052...
 PIDS+=($!)
 
 # 3. Start Webhook Runner gRPC Service
-echo -e "${YELLOW}▶ [3/6] Starting Webhook Runner gRPC Service on port 50053...${NC}"
+echo -e "${YELLOW}▶ [3/7] Starting Webhook Runner gRPC Service on port 50053...${NC}"
 (
     cd "$ROOT_DIR/webhook-runner"
     go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${YELLOW}[Runner gRPC]${NC}        ")/"
@@ -196,18 +217,26 @@ echo -e "${YELLOW}▶ [3/6] Starting Webhook Runner gRPC Service on port 50053..
 PIDS+=($!)
 
 # 4. Start Audit Microservice & Kafka Worker
-echo -e "${MAGENTA}▶ [4/6] Starting Audit Microservice & Kafka Worker on port 50054...${NC}"
+echo -e "${MAGENTA}▶ [4/7] Starting Audit Microservice & Kafka Worker on port 50054...${NC}"
 (
     cd "$ROOT_DIR/audit-service"
     go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${MAGENTA}[Audit Service]${NC}      ")/"
 ) &
 PIDS+=($!)
 
+# 5. Start Request Tracker Microservice & Kafka Worker
+echo -e "${CYAN}▶ [5/7] Starting Request Tracker Microservice & Kafka Worker on port 50055...${NC}"
+(
+    cd "$ROOT_DIR/request-tracker-service"
+    go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${CYAN}[Request Tracker]${NC}    ")/"
+) &
+PIDS+=($!)
+
 # Give gRPC servers a moment to bind ports
 sleep 1.5
 
-# 5. Start API Gateway
-echo -e "${GREEN}▶ [5/6] Starting API Gateway HTTP REST on port 8080...${NC}"
+# 6. Start API Gateway
+echo -e "${GREEN}▶ [6/7] Starting API Gateway HTTP REST on port 8080...${NC}"
 (
     cd "$ROOT_DIR/api-gateway"
     go run cmd/server/main.go 2>&1 | sed -e "s/^/$(printf "${GREEN}[API Gateway]${NC}        ")/ "
@@ -217,8 +246,8 @@ PIDS+=($!)
 # Give Gateway a moment to bind port
 sleep 1
 
-# 6. Start Frontend Dev Server
-echo -e "${CYAN}▶ [6/6] Starting Vue 3 Frontend (Zoho Projects UI) on port 5173...${NC}"
+# 7. Start Frontend Dev Server
+echo -e "${CYAN}▶ [7/7] Starting Vue 3 Frontend (Zoho Projects UI) on port 5173...${NC}"
 (
     cd "$ROOT_DIR/frontend"
     npm run dev -- --host 2>&1 | sed -e "s/^/$(printf "${CYAN}[Frontend UI]${NC}        ")/"

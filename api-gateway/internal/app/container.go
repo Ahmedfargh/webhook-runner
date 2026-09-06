@@ -8,15 +8,18 @@ import (
 	"webhookApiGateway/internal/config"
 	"webhookApiGateway/internal/handlers"
 	"webhookApiGateway/internal/kafka"
+	"webhookApiGateway/internal/telemetry"
 )
 
 type Container struct {
 	AccountsClient      *clients.AccountsClient
 	SubscriptionsClient *clients.SubscriptionsClient
 	RunnerClient        *clients.RunnerClient
-	AuditClient         *clients.AuditClient
-	KafkaProducer       *kafka.KafkaProducer
-	AuditEmitter        *audit.KafkaEmitter
+	AuditClient          *clients.AuditClient
+	RequestTrackerClient *clients.RequestTrackerClient
+	KafkaProducer        *kafka.KafkaProducer
+	AuditEmitter         *audit.KafkaEmitter
+	RequestTrackerEmitter *telemetry.RequestTrackerEmitter
 
 	AuthHandler          *handlers.AuthHandler
 	UserHandler          *handlers.UserHandler
@@ -32,6 +35,7 @@ type Container struct {
 	AppHandler           *handlers.AppHandler
 	WebhookHandler       *handlers.WebhookHandler
 	AuditHandler         *handlers.AuditHandler
+	RequestTraceHandler  *handlers.RequestTraceHandler
 }
 
 func NewContainer(cfg *config.Config) (*Container, error) {
@@ -61,8 +65,18 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		return nil, fmt.Errorf("failed to initialize Audit gRPC client: %w", err)
 	}
 
+	requestTrackerClient, err := clients.NewRequestTrackerClient(cfg)
+	if err != nil {
+		accountsClient.Close()
+		subscriptionsClient.Close()
+		runnerClient.Close()
+		auditClient.Close()
+		return nil, fmt.Errorf("failed to initialize Request Tracker gRPC client: %w", err)
+	}
+
 	kafkaProducer := kafka.NewKafkaProducer(cfg.KafkaBrokers, cfg.KafkaTopicDispatch, cfg.KafkaEnabled)
 	auditEmitter := audit.NewEmitter(cfg.KafkaBrokers, cfg.KafkaTopicAudit, "api-gateway", cfg.KafkaEnabled)
+	requestTrackerEmitter := telemetry.NewRequestTrackerEmitter(cfg.KafkaBrokers, cfg.KafkaTopicRequestTraces, "api-gateway", cfg.KafkaEnabled)
 
 	authHandler := handlers.NewAuthHandler(accountsClient, cfg)
 	userHandler := handlers.NewUserHandler(accountsClient)
@@ -80,28 +94,32 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	appHandler := handlers.NewAppHandler(runnerClient)
 	webhookHandler := handlers.NewWebhookHandler(runnerClient, kafkaProducer)
 	auditHandler := handlers.NewAuditHandler(auditClient)
+	requestTraceHandler := handlers.NewRequestTraceHandler(requestTrackerClient)
 
 	return &Container{
-		AccountsClient:       accountsClient,
-		SubscriptionsClient:  subscriptionsClient,
-		RunnerClient:         runnerClient,
-		AuditClient:          auditClient,
-		KafkaProducer:        kafkaProducer,
-		AuditEmitter:         auditEmitter,
-		AuthHandler:          authHandler,
-		UserHandler:          userHandler,
-		AdminHandler:         adminHandler,
-		RoleHandler:          roleHandler,
-		PermHandler:          permHandler,
-		HealthHandler:        healthHandler,
-		CountryHandler:       countryHandler,
-		PlanHandler:          planHandler,
-		SubscriptionHandler:  subscriptionHandler,
-		InvoiceHandler:       invoiceHandler,
-		ManualPaymentHandler: manualPaymentHandler,
-		AppHandler:           appHandler,
-		WebhookHandler:       webhookHandler,
-		AuditHandler:         auditHandler,
+		AccountsClient:        accountsClient,
+		SubscriptionsClient:   subscriptionsClient,
+		RunnerClient:          runnerClient,
+		AuditClient:           auditClient,
+		RequestTrackerClient:  requestTrackerClient,
+		KafkaProducer:         kafkaProducer,
+		AuditEmitter:          auditEmitter,
+		RequestTrackerEmitter: requestTrackerEmitter,
+		AuthHandler:           authHandler,
+		UserHandler:           userHandler,
+		AdminHandler:          adminHandler,
+		RoleHandler:           roleHandler,
+		PermHandler:           permHandler,
+		HealthHandler:         healthHandler,
+		CountryHandler:        countryHandler,
+		PlanHandler:           planHandler,
+		SubscriptionHandler:   subscriptionHandler,
+		InvoiceHandler:        invoiceHandler,
+		ManualPaymentHandler:  manualPaymentHandler,
+		AppHandler:            appHandler,
+		WebhookHandler:        webhookHandler,
+		AuditHandler:          auditHandler,
+		RequestTraceHandler:   requestTraceHandler,
 	}, nil
 }
 
@@ -118,10 +136,16 @@ func (c *Container) Close() {
 	if c.AuditClient != nil {
 		_ = c.AuditClient.Close()
 	}
+	if c.RequestTrackerClient != nil {
+		_ = c.RequestTrackerClient.Close()
+	}
 	if c.KafkaProducer != nil {
 		_ = c.KafkaProducer.Close()
 	}
 	if c.AuditEmitter != nil {
 		_ = c.AuditEmitter.Close()
+	}
+	if c.RequestTrackerEmitter != nil {
+		_ = c.RequestTrackerEmitter.Close()
 	}
 }

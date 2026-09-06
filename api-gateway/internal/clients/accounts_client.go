@@ -8,6 +8,7 @@ import (
 
 	accountsv1 "webhookApiGateway/api/proto/v1"
 	"webhookApiGateway/internal/config"
+	"webhookApiGateway/internal/telemetry"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -23,7 +24,7 @@ type AccountsClient struct {
 	Country    accountsv1.CountryServiceClient
 }
 
-// serviceAuthInterceptor adds x-service-name and authorization metadata headers to all outgoing gRPC calls
+// serviceAuthInterceptor adds x-service-name, x-trace-id and authorization metadata headers and records the gRPC trip
 func serviceAuthInterceptor(serviceName, serviceToken string) grpc.UnaryClientInterceptor {
 	return func(
 		ctx context.Context,
@@ -33,12 +34,41 @@ func serviceAuthInterceptor(serviceName, serviceToken string) grpc.UnaryClientIn
 		invoker grpc.UnaryInvoker,
 		opts ...grpc.CallOption,
 	) error {
-		md := metadata.Pairs(
+		start := time.Now()
+		collector := telemetry.GetSpanCollector(ctx)
+
+		traceID := ""
+		if collector != nil {
+			traceID = collector.GetTraceID()
+		}
+
+		pairs := []string{
 			"x-service-name", serviceName,
-			"authorization", "Bearer "+serviceToken,
-		)
+			"authorization", "Bearer " + serviceToken,
+		}
+		if traceID != "" {
+			pairs = append(pairs, "x-trace-id", traceID, "x-request-id", traceID)
+		}
+
+		md := metadata.Pairs(pairs...)
 		ctx = metadata.NewOutgoingContext(ctx, md)
-		return invoker(ctx, method, req, reply, cc, opts...)
+
+		err := invoker(ctx, method, req, reply, cc, opts...)
+		duration := time.Since(start)
+
+		if collector != nil {
+			targetService := "accounts-service"
+			if cc != nil {
+				targetService = cc.Target()
+			}
+			status := "OK"
+			if err != nil {
+				status = "ERROR"
+			}
+			collector.AddSpan("gRPC: "+method, targetService, "GRPC", "DOWNSTREAM_RPC", start, duration, status, "")
+		}
+
+		return err
 	}
 }
 
@@ -52,10 +82,21 @@ func serviceStreamAuthInterceptor(serviceName, serviceToken string) grpc.StreamC
 		streamer grpc.Streamer,
 		opts ...grpc.CallOption,
 	) (grpc.ClientStream, error) {
-		md := metadata.Pairs(
+		collector := telemetry.GetSpanCollector(ctx)
+		traceID := ""
+		if collector != nil {
+			traceID = collector.GetTraceID()
+		}
+
+		pairs := []string{
 			"x-service-name", serviceName,
-			"authorization", "Bearer "+serviceToken,
-		)
+			"authorization", "Bearer " + serviceToken,
+		}
+		if traceID != "" {
+			pairs = append(pairs, "x-trace-id", traceID, "x-request-id", traceID)
+		}
+
+		md := metadata.Pairs(pairs...)
 		ctx = metadata.NewOutgoingContext(ctx, md)
 		return streamer(ctx, desc, cc, method, opts...)
 	}

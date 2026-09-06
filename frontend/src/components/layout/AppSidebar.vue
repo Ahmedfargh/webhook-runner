@@ -107,6 +107,11 @@
           <History :size="18" />
           <span v-if="!isCollapsed">{{ t('nav.auditLogs') }}</span>
         </router-link>
+
+        <router-link to="/request-traces" class="nav-item" active-class="nav-item-active">
+          <Activity :size="18" />
+          <span v-if="!isCollapsed">{{ t('nav.requestTraces') }}</span>
+        </router-link>
       </template>
     </nav>
 

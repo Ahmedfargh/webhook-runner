@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package request_tracker.v1;
+
+option go_package = "webhookApiGateway/api/proto/request_tracker/v1;requesttrackerv1";
+
+service RequestTrackerService {
+  rpc RecordTrace (RecordTraceRequest) returns (RecordTraceResponse);
+  rpc ListTraces (ListTracesRequest) returns (ListTracesResponse);
+  rpc GetTrace (GetTraceRequest) returns (GetTraceResponse);
+  rpc GetTraceStats (GetTraceStatsRequest) returns (GetTraceStatsResponse);
+}
+
+message RequestTrace {
+  string id = 1;
+  string trace_id = 2;
+  string request_id = 3;
+  string actor_type = 4;   // ADMIN, USER, ANONYMOUS, SYSTEM
+  string actor_id = 5;
+  string actor_name = 6;
+  string actor_email = 7;
+  string actor_role = 8;
+  string service_name = 9;
+  string method = 10;
+  string path = 11;
+  string route = 12;
+  string query_params = 13;
+  string client_ip = 14;
+  string user_agent = 15;
+  int32 status_code = 16;
+  double lifetime_ms = 17;
+  string request_body = 18;
+  string response_body = 19;
+  string error_message = 20;
+  string spans_json = 21;
+  string received_at = 22;
+  string completed_at = 23;
+}
+
+message RecordTraceRequest {
+  RequestTrace trace = 1;
+}
+
+message RecordTraceResponse {
+  bool success = 1;
+  string message = 2;
+  RequestTrace trace = 3;
+}
+
+message ListTracesRequest {
+  string actor_type = 1;
+  string actor_id = 2;
+  string method = 3;
+  string route = 4;
+  int32 status_code = 5;
+  double min_lifetime_ms = 6;
+  string search = 7;
+  string start_date = 8;
+  string end_date = 9;
+  int32 page = 10;
+  int32 limit = 11;
+}
+
+message ListTracesResponse {
+  repeated RequestTrace traces = 1;
+  int64 total = 2;
+  int32 page = 3;
+  int32 limit = 4;
+}
+
+message GetTraceRequest {
+  string id = 1;
+}
+
+message GetTraceResponse {
+  RequestTrace trace = 1;
+}
+
+message GetTraceStatsRequest {
+  string start_date = 1;
+  string end_date = 2;
+}
+
+message GetTraceStatsResponse {
+  int64 total_requests = 1;
+  double avg_lifetime_ms = 2;
+  double p95_lifetime_ms = 3;
+  double p99_lifetime_ms = 4;
+  int64 error_count = 5;
+  double error_rate = 6;
+}

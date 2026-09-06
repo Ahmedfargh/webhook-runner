@@ -152,6 +152,34 @@ services:
       - webhook_network
 
   # ============================================================================
+  # 5B. Request Tracker Microservice & Kafka Worker (Port 50055)
+  # ============================================================================
+  request-tracker-service:
+    build:
+      context: ./request-tracker-service
+      dockerfile: Dockerfile
+    container_name: webhook_request_tracker
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DB_NAME: ${REQUEST_TRACKER_DB_NAME:-webhook_request_tracker}
+      GRPC_PORT: ${REQUEST_TRACKER_GRPC_PORT:-50055}
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:29092}
+      KAFKA_TOPIC_REQUEST_TRACES: ${KAFKA_TOPIC_REQUEST_TRACES:-http-request-traces}
+      KAFKA_REQUEST_TRACKER_GROUP_ID: ${KAFKA_REQUEST_TRACKER_GROUP_ID:-request-tracker-group}
+      KAFKA_ENABLED: ${KAFKA_ENABLED:-true}
+    ports:
+      - "${REQUEST_TRACKER_GRPC_PORT:-50055}:50055"
+    networks:
+      - webhook_network
+
+  # ============================================================================
   # 6. API Gateway REST Microservice (Port 8080)
   # ============================================================================
   api-gateway:
@@ -165,6 +193,7 @@ services:
       - subscriptions
       - webhook-runner
       - audit-service
+      - request-tracker-service
       - kafka
     env_file:
       - .env
@@ -172,6 +201,7 @@ services:
       KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:29092}
       KAFKA_TOPIC_WEBHOOK_DISPATCH: ${KAFKA_TOPIC_WEBHOOK_DISPATCH:-webhook-dispatches}
       KAFKA_TOPIC_WEBHOOK_RESULTS: ${KAFKA_TOPIC_WEBHOOK_RESULTS:-webhook-results}
+      KAFKA_TOPIC_REQUEST_TRACES: ${KAFKA_TOPIC_REQUEST_TRACES:-http-request-traces}
       KAFKA_ENABLED: ${KAFKA_ENABLED:-true}
     ports:
       - "${API_GATEWAY_PORT:-8080}:8080"

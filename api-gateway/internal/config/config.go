@@ -17,6 +17,8 @@ type Config struct {
 	RunnerGRPCPort        string
 	AuditGRPCHost         string
 	AuditGRPCPort         string
+	RequestTrackerGRPCHost string
+	RequestTrackerGRPCPort string
 	ServiceName           string
 	ServiceToken          string
 	JWTSecret             string
@@ -30,6 +32,7 @@ type Config struct {
 	KafkaTopicDispatch    string
 	KafkaTopicResults     string
 	KafkaTopicAudit       string
+	KafkaTopicRequestTraces string
 	KafkaEnabled          bool
 }
 
@@ -47,6 +50,8 @@ func LoadConfig() *Config {
 	runnerPort := getEnv("RUNNER_GRPC_PORT", "50053")
 	auditHost := getEnv("AUDIT_GRPC_HOST", "localhost")
 	auditPort := getEnv("AUDIT_GRPC_PORT", "50054")
+	requestTrackerHost := getEnv("REQUEST_TRACKER_GRPC_HOST", "localhost")
+	requestTrackerPort := getEnv("REQUEST_TRACKER_GRPC_PORT", "50055")
 	serviceName := getEnv("SERVICE_NAME", "api-gateway")
 	serviceToken := getEnv("SERVICE_TOKEN", "4f7f956f34bcfa0c9a55aff6b98c4e1d87e1da6d0d33f5021b5937123d7330c1")
 	jwtSecret := getEnv("JWT_SECRET", "api-gateway-super-secret-jwt-key-2026")
@@ -62,32 +67,36 @@ func LoadConfig() *Config {
 	kafkaTopicDispatch := getEnv("KAFKA_TOPIC_WEBHOOK_DISPATCH", "webhook-dispatches")
 	kafkaTopicResults := getEnv("KAFKA_TOPIC_WEBHOOK_RESULTS", "webhook-results")
 	kafkaTopicAudit := getEnv("KAFKA_TOPIC_AUDIT_EVENTS", "audit-events")
+	kafkaTopicRequestTraces := getEnv("KAFKA_TOPIC_REQUEST_TRACES", "http-request-traces")
 	kafkaEnabled := getEnv("KAFKA_ENABLED", "true") == "true" || getEnv("KAFKA_ENABLED", "1") == "1"
 
 	return &Config{
-		Port:                  port,
-		AccountsGRPCHost:      accountsHost,
-		AccountsGRPCPort:      accountsPort,
-		SubscriptionsGRPCHost: subscriptionsHost,
-		SubscriptionsGRPCPort: subscriptionsPort,
-		RunnerGRPCHost:        runnerHost,
-		RunnerGRPCPort:        runnerPort,
-		AuditGRPCHost:         auditHost,
-		AuditGRPCPort:         auditPort,
-		ServiceName:           serviceName,
-		ServiceToken:          serviceToken,
-		JWTSecret:             jwtSecret,
-		AllowedOrigins:        allowedOrigins,
-		DBHost:                dbHost,
-		DBPort:                dbPort,
-		DBUser:                dbUser,
-		DBPassword:            dbPassword,
-		DBName:                dbName,
-		KafkaBrokers:          kafkaBrokers,
-		KafkaTopicDispatch:    kafkaTopicDispatch,
-		KafkaTopicResults:     kafkaTopicResults,
-		KafkaTopicAudit:       kafkaTopicAudit,
-		KafkaEnabled:          kafkaEnabled,
+		Port:                   port,
+		AccountsGRPCHost:       accountsHost,
+		AccountsGRPCPort:       accountsPort,
+		SubscriptionsGRPCHost:  subscriptionsHost,
+		SubscriptionsGRPCPort:  subscriptionsPort,
+		RunnerGRPCHost:         runnerHost,
+		RunnerGRPCPort:         runnerPort,
+		AuditGRPCHost:          auditHost,
+		AuditGRPCPort:          auditPort,
+		RequestTrackerGRPCHost: requestTrackerHost,
+		RequestTrackerGRPCPort: requestTrackerPort,
+		ServiceName:            serviceName,
+		ServiceToken:           serviceToken,
+		JWTSecret:              jwtSecret,
+		AllowedOrigins:         allowedOrigins,
+		DBHost:                 dbHost,
+		DBPort:                 dbPort,
+		DBUser:                 dbUser,
+		DBPassword:             dbPassword,
+		DBName:                 dbName,
+		KafkaBrokers:           kafkaBrokers,
+		KafkaTopicDispatch:     kafkaTopicDispatch,
+		KafkaTopicResults:      kafkaTopicResults,
+		KafkaTopicAudit:        kafkaTopicAudit,
+		KafkaTopicRequestTraces: kafkaTopicRequestTraces,
+		KafkaEnabled:           kafkaEnabled,
 	}
 }
 

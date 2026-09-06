@@ -21,7 +21,12 @@ Each domain feature is organized as a self-contained module in `internal/modules
 All gRPC RPC methods (except reflection) require a Bearer token passed via gRPC metadata headers:
 ```
 authorization: Bearer <AUTH_TOKEN>
+x-service-name: api-gateway
+x-request-id: <correlation-id>
+x-trace-id: <correlation-id>
 ```
+
+All incoming calls have their `x-request-id` and `x-trace-id` extracted for logging and audit correlation. High-impact operations (login, user registration, role assignments, permissions changes) are emitted to Kafka topic `audit-events`.
 
 ### Generate Auth Token Command
 

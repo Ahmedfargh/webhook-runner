@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"webhookApiGateway/internal/telemetry"
+
 	"github.com/segmentio/kafka-go"
 )
 
@@ -71,6 +73,13 @@ func (p *KafkaProducer) PublishWebhookDispatch(ctx context.Context, event *Webho
 		return errors.New("kafka producer is not enabled")
 	}
 
+	start := time.Now()
+	collector := telemetry.GetSpanCollector(ctx)
+	traceID := ""
+	if collector != nil {
+		traceID = collector.GetTraceID()
+	}
+
 	if event.CreatedAt.IsZero() {
 		event.CreatedAt = time.Now().UTC()
 	}
@@ -83,20 +92,40 @@ func (p *KafkaProducer) PublishWebhookDispatch(ctx context.Context, event *Webho
 		return fmt.Errorf("failed to marshal webhook dispatch event: %w", err)
 	}
 
+	headers := []kafka.Header{
+		{Key: "event_name", Value: []byte(event.EventName)},
+		{Key: "call_id", Value: []byte(event.CallID)},
+	}
+	if traceID != "" {
+		headers = append(headers,
+			kafka.Header{Key: "request_id", Value: []byte(traceID)},
+			kafka.Header{Key: "trace_id", Value: []byte(traceID)},
+			kafka.Header{Key: "x-request-id", Value: []byte(traceID)},
+		)
+	}
+
 	msg := kafka.Message{
-		Key:   []byte(event.AppID),
-		Value: payload,
-		Time:  event.CreatedAt,
-		Headers: []kafka.Header{
-			{Key: "event_name", Value: []byte(event.EventName)},
-			{Key: "call_id", Value: []byte(event.CallID)},
-		},
+		Key:     []byte(event.AppID),
+		Value:   payload,
+		Time:    event.CreatedAt,
+		Headers: headers,
 	}
 
 	writeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	if err := p.writer.WriteMessages(writeCtx, msg); err != nil {
+	err = p.writer.WriteMessages(writeCtx, msg)
+	duration := time.Since(start)
+
+	if collector != nil {
+		status := "OK"
+		if err != nil {
+			status = "ERROR"
+		}
+		collector.AddSpan("Kafka Dispatch: "+p.topic, "api-gateway", "KAFKA", "EVENT_STREAM", start, duration, status, "Event: "+event.EventName)
+	}
+
+	if err != nil {
 		return fmt.Errorf("failed to publish message to kafka topic '%s': %w", p.topic, err)
 	}
 

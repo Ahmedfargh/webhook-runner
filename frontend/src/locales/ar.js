@@ -40,6 +40,7 @@ export default {
     adminBilling: 'لوحة الفوترة والدفع اليدوي',
     topology: 'مخطط البوابة والشبكة',
     auditLogs: 'سجل تدقيق النظام والعمليات',
+    requestTraces: 'تتبع الطلبات وأداء النظام (APM)',
     coreModules: 'الوحدات الأساسية',
     systemSecurity: 'النظام والأمان',
     signOut: 'تسجيل الخروج',

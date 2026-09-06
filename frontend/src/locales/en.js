@@ -43,6 +43,7 @@ export default {
     webhookLogs: 'Webhook Logs',
     topology: 'Gateway Topology',
     auditLogs: 'Audit Trail & Logs',
+    requestTraces: 'Request Traces & APM',
     coreModules: 'Core Modules',
     systemSecurity: 'System & Security',
     signOut: 'Sign Out',

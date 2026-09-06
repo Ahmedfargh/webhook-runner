@@ -21,11 +21,22 @@ Enterprise single-page application built with Vue 3, Vite, Pinia, Vue Router, an
 - **Invoices Ledger (`/invoices`)**: View invoices, print tax receipts, and submit bank transfer wire reference numbers.
 - **Admin Billing Console (`/admin/billing`)**: Review offline bank transfer payment queue, approve/reject wire proofs, issue manual custom invoices, and perform admin subscription overrides.
 
-### 4. Identity & RBAC Management (Admin Only)
+### 4. System Telemetry & APM Traces (`/request-traces`)
+- **Live KPI Metrics**: Real-time counters for Total Tracked Requests, Average Lifetime (ms), P95/P99 latency benchmarks, and Error Rate %.
+- **Multi-Attribute Filter Bar**: Instant search by `trace_id` or endpoint path, filter by HTTP Method, Status Code, Actor Type (`ADMIN`, `USER`, `ANONYMOUS`), and Min Latency threshold.
+- **Request Inspector Modal**:
+  - **Request Trip Waterfall (رحلة الطلب ومخطط المسار)**: Relative Gantt timeline visualizing multi-hop latency across REST Gateway Ingress $\rightarrow$ Downstream gRPC $\rightarrow$ Kafka Event Dispatches $\rightarrow$ REST Egress.
+  - **Sanitized Payloads**: Auto-masked passwords/tokens in incoming request bodies and formatted response payloads.
+  - **RTL & LTR Native Layouts**: Clean numerical metric formatting (`dir="ltr"`) ensuring no text flipping or overlap in Arabic mode.
+
+### 5. Audit Logging & Compliance (`/audit-logs`)
+- Immutable ledger tracking system mutations, actor IDs, client IPs, action types, and before/after diffs.
+
+### 6. Identity & RBAC Management (Admin Only)
 - User Management (`/users`), Admin Accounts (`/admins`), Roles (`/roles`), and Granular Permission Matrix (`/permissions`).
 
-### 5. System Observability & Topology (`/topology`)
-- Live microservices visualizer showing Browser $\rightarrow$ API Gateway $\rightarrow$ gRPC Services $\rightarrow$ MySQL.
+### 7. System Observability & Topology (`/topology`)
+- Live microservices visualizer showing Browser $\rightarrow$ API Gateway $\rightarrow$ gRPC Services $\rightarrow$ Kafka $\rightarrow$ MySQL.
 
 ---
 

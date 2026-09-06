@@ -53,26 +53,62 @@
           <mxGeometry x="20" y="30" width="630" height="95" as="geometry" />
         </mxCell>
 
+        <!-- AUDIT SERVICE GRPC BOX -->
+        <mxCell id="ov_audit" value="&lt;b style='font-size:14px; color:#475569;'&gt;AUDIT SERVICE (gRPC Port 50054)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#cbd5e1;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="605" width="670" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_audit_details" value="• &lt;b&gt;Kafka Ingestion:&lt;/b&gt; Consumes from &lt;i&gt;audit-events&lt;/i&gt; topic for background logging&lt;br/&gt;• &lt;b&gt;Immutable Ledger:&lt;/b&gt; Actor attribution, before/after mutation diffs, client IP &amp;amp; status&lt;br/&gt;• &lt;b&gt;Query API:&lt;/b&gt; High-speed gRPC filtering by resource, action, and date range&lt;br/&gt;• &lt;b&gt;Database:&lt;/b&gt; MySQL &lt;i&gt;webhook_audit&lt;/i&gt; (table: &lt;i&gt;audit_logs&lt;/i&gt;)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#94a3b8;align=left;spacing=8;fontSize=11;" vertex="1" parent="ov_audit">
+          <mxGeometry x="20" y="30" width="630" height="95" as="geometry" />
+        </mxCell>
+
+        <!-- REQUEST TRACKER GRPC BOX -->
+        <mxCell id="ov_tracker" value="&lt;b style='font-size:14px; color:#0369a1;'&gt;REQUEST TRACKER SERVICE (gRPC Port 50055)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f0f9ff;strokeColor=#bae6fd;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="760" width="670" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_tracker_details" value="• &lt;b&gt;Kafka Stream Consumer:&lt;/b&gt; Consumes micro-batches from &lt;i&gt;http-request-traces&lt;/i&gt;&lt;br/&gt;• &lt;b&gt;APM Engine:&lt;/b&gt; Full lifecycle latency (lifetime_ms), sanitized request/response payloads&lt;br/&gt;• &lt;b&gt;Multi-Hop Trip Waterfall:&lt;/b&gt; Parses spans across REST, gRPC, and Kafka event dispatches&lt;br/&gt;• &lt;b&gt;Database:&lt;/b&gt; MySQL &lt;i&gt;webhook_request_tracker&lt;/i&gt; (table: &lt;i&gt;request_traces&lt;/i&gt;)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7dd3fc;align=left;spacing=8;fontSize=11;" vertex="1" parent="ov_tracker">
+          <mxGeometry x="20" y="30" width="630" height="95" as="geometry" />
+        </mxCell>
+
+        <!-- APACHE KAFKA CLUSTER BOX -->
+        <mxCell id="ov_kafka" value="&lt;b style='font-size:15px; color:#c2410c;'&gt;APACHE KAFKA MESSAGE BROKER (Port 9092)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#ffedd5;rounded=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="720" y="605" width="650" height="290" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_kafka_details" value="&lt;b style='color:#9a3412;'&gt;Distributed Event Streaming Topics:&lt;/b&gt;&lt;hr/&gt;• &lt;b&gt;http-request-traces:&lt;/b&gt; Non-blocking APM trace telemetry emitted by API Gateway&lt;br/&gt;• &lt;b&gt;webhook-dispatches:&lt;/b&gt; Asynchronous queue for background webhook execution&lt;br/&gt;• &lt;b&gt;audit-events:&lt;/b&gt; Security &amp;amp; administrative mutation records from all microservices&lt;br/&gt;• &lt;b&gt;Trace Correlation:&lt;/b&gt; Messages carry &lt;i&gt;request_id&lt;/i&gt; and &lt;i&gt;trace_id&lt;/i&gt; headers throughout the cluster" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fdba74;align=left;spacing=8;fontSize=11;" vertex="1" parent="ov_kafka">
+          <mxGeometry x="20" y="45" width="610" height="225" as="geometry" />
+        </mxCell>
+
         <!-- EDGES -->
-        <mxCell id="ov_edge1" value="&lt;b&gt;HTTP REST / JSON&lt;/b&gt;&lt;br/&gt;Bearer JWT" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563eb;strokeWidth=2;fontColor=#1e40af;" edge="1" parent="1" source="ov_fe" target="ov_gw">
+        <mxCell id="ov_edge1" value="&lt;b&gt;HTTP REST / JSON&lt;/b&gt;&lt;br/&gt;Bearer JWT&lt;br/&gt;X-Request-ID" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563eb;strokeWidth=2;fontColor=#1e40af;" edge="1" parent="1" source="ov_fe" target="ov_gw">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="ov_edge2" value="&lt;b&gt;gRPC (Protobuf)&lt;/b&gt;&lt;br/&gt;Service Auth Headers" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#ea580c;strokeWidth=2;fontColor=#9a3412;" edge="1" parent="1" source="ov_gw" target="ov_acc">
+        <mxCell id="ov_edge2" value="&lt;b&gt;gRPC (Protobuf)&lt;/b&gt;&lt;br/&gt;x-request-id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#ea580c;strokeWidth=2;fontColor=#9a3412;" edge="1" parent="1" source="ov_gw" target="ov_acc">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="ov_edge3" value="&lt;b&gt;gRPC (Protobuf)&lt;/b&gt;&lt;br/&gt;Service Auth Headers" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7e22ce;strokeWidth=2;fontColor=#6b21a8;" edge="1" parent="1" source="ov_gw" target="ov_sub">
+        <mxCell id="ov_edge3" value="&lt;b&gt;gRPC (Protobuf)&lt;/b&gt;&lt;br/&gt;x-request-id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7e22ce;strokeWidth=2;fontColor=#6b21a8;" edge="1" parent="1" source="ov_gw" target="ov_sub">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="ov_edge4" value="&lt;b&gt;gRPC (Protobuf)&lt;/b&gt;&lt;br/&gt;Service Auth Headers" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0891b2;strokeWidth=2;fontColor=#0e7490;" edge="1" parent="1" source="ov_gw" target="ov_run">
+        <mxCell id="ov_edge4" value="&lt;b&gt;gRPC (Protobuf)&lt;/b&gt;&lt;br/&gt;x-request-id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0891b2;strokeWidth=2;fontColor=#0e7490;" edge="1" parent="1" source="ov_gw" target="ov_run">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_edge5" value="&lt;b&gt;gRPC (Protobuf)&lt;/b&gt;&lt;br/&gt;Query Logs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#475569;strokeWidth=2;fontColor=#334155;" edge="1" parent="1" source="ov_gw" target="ov_audit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_edge6" value="&lt;b&gt;gRPC (Protobuf)&lt;/b&gt;&lt;br/&gt;Query Traces" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0284c7;strokeWidth=2;fontColor=#0369a1;" edge="1" parent="1" source="ov_gw" target="ov_tracker">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_edge7" value="&lt;b&gt;Async Producer&lt;/b&gt;&lt;br/&gt;http-request-traces" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c2410c;strokeWidth=2;fontColor=#9a3412;" edge="1" parent="1" source="ov_gw" target="ov_kafka">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_edge8" value="&lt;b&gt;Batch Consumer&lt;/b&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#0369a1;strokeWidth=2;fontColor=#0284c7;" edge="1" parent="1" source="ov_kafka" target="ov_tracker">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
         <!-- SECURITY CALLOUT BANNER -->
-        <mxCell id="ov_sec_box" value="&lt;b style='font-size:14px;'&gt;SECURITY &amp;amp; ZERO-TRUST BOUNDARY PRINCIPLES:&lt;/b&gt;&lt;hr/&gt;1. &lt;b&gt;End-User Isolation:&lt;/b&gt; End-users and frontend clients NEVER connect directly to gRPC ports or MySQL databases.&lt;br/&gt;2. &lt;b&gt;Caller Whitelisting:&lt;/b&gt; Accounts, Subscriptions, and Runner gRPC services enforce an incoming &lt;i&gt;X-Service-Name&lt;/i&gt; whitelist (&lt;code&gt;ALLOWED_SERVICES=api-gateway,webhook-runner&lt;/code&gt;). Unidentified calls are rejected.&lt;br/&gt;3. &lt;b&gt;Shared Cryptographic Secret:&lt;/b&gt; Every inter-service gRPC call passes a pre-shared 256-bit &lt;i&gt;AUTH_TOKEN&lt;/i&gt; in gRPC context metadata." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f172a;strokeColor=#1e293b;align=left;spacing=12;fontSize=11;fontColor=#f8fafc;" vertex="1" parent="1">
-          <mxGeometry x="40" y="610" width="2080" height="100" as="geometry" />
+        <mxCell id="ov_sec_box" value="&lt;b style='font-size:14px;'&gt;SECURITY &amp;amp; ZERO-TRUST BOUNDARY PRINCIPLES:&lt;/b&gt;&lt;hr/&gt;1. &lt;b&gt;End-User Isolation:&lt;/b&gt; End-users and frontend clients NEVER connect directly to gRPC ports, Kafka brokers, or MySQL databases.&lt;br/&gt;2. &lt;b&gt;Caller Whitelisting:&lt;/b&gt; All 5 gRPC microservices enforce an incoming &lt;i&gt;X-Service-Name&lt;/i&gt; whitelist (&lt;code&gt;ALLOWED_SERVICES=api-gateway,webhook-runner&lt;/code&gt;).&lt;br/&gt;3. &lt;b&gt;Shared Cryptographic Secret:&lt;/b&gt; Every inter-service gRPC call passes a pre-shared 256-bit &lt;i&gt;AUTH_TOKEN&lt;/i&gt; in metadata.&lt;br/&gt;4. &lt;b&gt;Multi-Protocol Correlation:&lt;/b&gt; Unique &lt;i&gt;X-Request-ID&lt;/i&gt; is propagated across REST &amp;rarr; gRPC metadata &amp;rarr; Kafka headers &amp;rarr; REST response." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f172a;strokeColor=#1e293b;align=left;spacing=12;fontSize=11;fontColor=#f8fafc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="930" width="2080" height="110" as="geometry" />
         </mxCell>
-      <mxCell id="ov_run_script" value="&lt;b&gt;run.sh (Ctrl+C to stop all services)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#ff0000;align=center;" vertex="1" parent="1">
-  <mxGeometry x="40" y="720" width="600" height="80" as="geometry"/>
+      <mxCell id="ov_run_script" value="&lt;b&gt;run.sh (Orchestrates all 7 components: MySQL, Kafka, 5 Microservices, Frontend)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#ff0000;align=center;" vertex="1" parent="1">
+  <mxGeometry x="40" y="1060" width="600" height="70" as="geometry"/>
 </mxCell>
 </root>
     </mxGraphModel>
@@ -535,6 +571,88 @@
         </mxCell>
         <mxCell id="run_rec_text" value="• &lt;b&gt;Webhook Call Telemetry:&lt;/b&gt; Records every execution with status (SUCCESS, FAILED, TIMEOUT), HTTP response code, latency_ms, and retry attempts.&lt;br/&gt;• &lt;b&gt;Built-in Local Test Receiver:&lt;/b&gt;&lt;br/&gt;  `POST http://localhost:8080/api/v1/webhooks/test-receiver`&lt;br/&gt;  - Verifies HMAC signature header &amp;amp; returns HTTP 200 OK with formatted JSON receipt.&lt;br/&gt;• &lt;b&gt;UI Integration:&lt;/b&gt; Per-app Webhook Logs modal with live stats, expandable inspection, and 1-click test dispatches." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#67e8f9;align=left;spacing=8;fontSize=11;" vertex="1" parent="run_rec_box">
           <mxGeometry x="15" y="35" width="630" height="260" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 10: REQUEST TRACKER & APM ENGINE (PORT 50055)                         -->
+  <!-- ========================================================================= -->
+  <diagram id="tab_request_tracker" name="10. Request Tracker &amp; APM Engine">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="rt_title" value="&lt;b style='font-size:22px; color:#ffffff;'&gt;REQUEST TRACKER SERVICE (Port 50055) - DISTRIBUTED APM &amp;amp; MULTI-HOP TRACING&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:12px; color:#94a3b8;'&gt;Zero-Latency Ingress Telemetry, Batch Kafka Ingestion, Multi-Hop Trip Waterfall, and Percentile Analytics&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0369a1;strokeColor=#0284c7;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="2080" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 1: INGESTION PIPELINE -->
+        <mxCell id="rt_ingest_box" value="&lt;b style='font-size:14px; color:#0369a1;'&gt;1. Asynchronous Ingestion Pipeline (internal/kafka/consumer.go)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f0f9ff;strokeColor=#bae6fd;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="660" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="rt_ingest_text" value="• &lt;b&gt;Zero Synchronous Ingress Overhead:&lt;/b&gt; API Gateway wraps ResponseWriter, computes `lifetime_ms`, and pushes trace payload to a 50,000-buffered memory channel.&lt;br/&gt;• &lt;b&gt;Kafka Topic `http-request-traces`:&lt;/b&gt; Gateway emitter asynchronously publishes traces with message key `request_id`.&lt;br/&gt;• &lt;b&gt;Micro-Batch Consumer:&lt;/b&gt; Pulls up to 100 traces or every 100ms and executes single-transaction GORM batch inserts into `request_traces`.&lt;br/&gt;• &lt;b&gt;Payload Sanitization:&lt;/b&gt; Sensitive credentials (passwords, tokens, secrets) are masked before serialization." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7dd3fc;align=left;spacing=8;fontSize=11;" vertex="1" parent="rt_ingest_box">
+          <mxGeometry x="15" y="35" width="630" height="280" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 2: MULTI-HOP TRIP WATERFALL -->
+        <mxCell id="rt_trip_box" value="&lt;b style='font-size:14px; color:#0369a1;'&gt;2. Multi-Protocol Trip Waterfall (REST &amp;rarr; gRPC &amp;rarr; Kafka &amp;rarr; REST)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f0f9ff;strokeColor=#bae6fd;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="740" y="140" width="680" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="rt_trip_text" value="• &lt;b&gt;SpanCollector Context:&lt;/b&gt; Attached to incoming request context in Gin middleware.&lt;br/&gt;• &lt;b&gt;Recorded Span Types:&lt;/b&gt;&lt;br/&gt;  - &lt;b&gt;INGRESS (REST):&lt;/b&gt; Gateway route matching &amp;amp; JWT verification latency.&lt;br/&gt;  - &lt;b&gt;DOWNSTREAM_RPC (gRPC):&lt;/b&gt; Outgoing calls to Accounts, Subscriptions, Runner, or Audit.&lt;br/&gt;  - &lt;b&gt;EVENT_STREAM (KAFKA):&lt;/b&gt; Outgoing message production to `webhook-dispatches` or `audit-events`.&lt;br/&gt;  - &lt;b&gt;EGRESS (REST):&lt;/b&gt; Final serialization &amp;amp; HTTP response flush.&lt;br/&gt;• &lt;b&gt;Serialized `spans_json`:&lt;/b&gt; Stored in DB and rendered as interactive Gantt waterfall in UI." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7dd3fc;align=left;spacing=8;fontSize=11;" vertex="1" parent="rt_trip_box">
+          <mxGeometry x="15" y="35" width="650" height="280" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 3: QUERY & STATS API -->
+        <mxCell id="rt_query_box" value="&lt;b style='font-size:14px; color:#0369a1;'&gt;3. gRPC Query &amp;amp; Analytics API (internal/modules/trace/presenter/)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f0f9ff;strokeColor=#bae6fd;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="1460" y="140" width="660" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="rt_query_text" value="• &lt;b&gt;ListTraces RPC:&lt;/b&gt; Multi-criteria filtering by actor_type, actor_id, method, route, status_code, and min_lifetime_ms.&lt;br/&gt;• &lt;b&gt;GetTrace RPC:&lt;/b&gt; Full single trace snapshot with raw query parameters, client IP, user agent, request/response bodies, and spans.&lt;br/&gt;• &lt;b&gt;GetTraceStats RPC:&lt;/b&gt; Real-time aggregation of total requests, average latency (ms), P95 / P99 latency percentiles, and error rate %.&lt;br/&gt;• &lt;b&gt;Security:&lt;/b&gt; Interceptor requires `Bearer AUTH_TOKEN` and whitelisted caller service." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7dd3fc;align=left;spacing=8;fontSize=11;" vertex="1" parent="rt_query_box">
+          <mxGeometry x="15" y="35" width="630" height="280" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 11: AUDIT SERVICE & COMPLIANCE TRAIL (PORT 50054)                     -->
+  <!-- ========================================================================= -->
+  <diagram id="tab_audit" name="11. Audit Service &amp; Compliance Trail">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="aud_title" value="&lt;b style='font-size:22px; color:#ffffff;'&gt;AUDIT SERVICE (Port 50054) - IMMUTABLE COMPLIANCE &amp;amp; MUTATION TRAIL&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:12px; color:#94a3b8;'&gt;Distributed Event-Driven Audit Ingestion via Kafka, JSON Entity Diffs, and Query Interface&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#334155;strokeColor=#1e293b;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="2080" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 1: INGESTION PIPELINE -->
+        <mxCell id="aud_ingest_box" value="&lt;b style='font-size:14px; color:#334155;'&gt;1. Audit Ingestion Pipeline (Kafka topic: audit-events)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#cbd5e1;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="660" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="aud_ingest_text" value="• &lt;b&gt;Cross-Service Emission:&lt;/b&gt; `api-gateway`, `accounts`, and `subscriptions` all emit JSON audit events to Kafka topic `audit-events`.&lt;br/&gt;• &lt;b&gt;Captured Metadata:&lt;/b&gt; Actor identity (`actor_id`, `actor_email`, `actor_type`), origin IP address, user agent, action verb, and affected resource.&lt;br/&gt;• &lt;b&gt;Reliable Ingestion:&lt;/b&gt; Consumer reads and writes to MySQL `webhook_audit.audit_logs` table asynchronously." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#94a3b8;align=left;spacing=8;fontSize=11;" vertex="1" parent="aud_ingest_box">
+          <mxGeometry x="15" y="35" width="630" height="280" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 2: DIFF & ENTITY LOGGING -->
+        <mxCell id="aud_diff_box" value="&lt;b style='font-size:14px; color:#334155;'&gt;2. JSON Entity State Diffs (before_json / after_json)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#cbd5e1;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="740" y="140" width="680" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="aud_diff_text" value="• &lt;b&gt;State Tracking:&lt;/b&gt; For any database record modification (e.g. role update, subscription status override, secret rotation), the before and after states are saved.&lt;br/&gt;• &lt;b&gt;Non-Repudiation:&lt;/b&gt; Every audit record is immutable once created.&lt;br/&gt;• &lt;b&gt;Audit Trace Correlation:&lt;/b&gt; Carries the originating `x-request-id` so audit events can be cross-referenced with APM traces in `request-tracker-service`." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#94a3b8;align=left;spacing=8;fontSize=11;" vertex="1" parent="aud_diff_box">
+          <mxGeometry x="15" y="35" width="650" height="280" as="geometry" />
+        </mxCell>
+
+        <!-- MODULE 3: QUERY API -->
+        <mxCell id="aud_query_box" value="&lt;b style='font-size:14px; color:#334155;'&gt;3. gRPC Query API (internal/modules/audit/)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#cbd5e1;rounded=1;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="1460" y="140" width="660" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="aud_query_text" value="• &lt;b&gt;ListAuditLogs RPC:&lt;/b&gt; Paginated querying filtered by actor, service, resource, action, and date ranges.&lt;br/&gt;• &lt;b&gt;GetAuditLog RPC:&lt;/b&gt; Retrieves full record including formatted JSON state diffs.&lt;br/&gt;• &lt;b&gt;Frontend Integration:&lt;/b&gt; Accessible to administrators via `/audit-logs` in the Vue 3 console." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#94a3b8;align=left;spacing=8;fontSize=11;" vertex="1" parent="aud_query_box">
+          <mxGeometry x="15" y="35" width="630" height="280" as="geometry" />
         </mxCell>
 
       </root>

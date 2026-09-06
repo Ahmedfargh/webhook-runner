@@ -39,7 +39,17 @@ Every outgoing HTTP webhook request is automatically signed using the app's `web
 | `X-Webhook-ID` | Unique execution call identifier | `wh_call_88291...` |
 | `X-Webhook-Event` | Event topic name | `order.created` |
 | `X-Webhook-Timestamp` | Unix epoch timestamp (seconds) | `1788645000` |
+| `X-Request-ID` | Distributed end-to-end request correlation ID | `req-018e4b7a...` |
 | `Content-Type` | JSON payload MIME type | `application/json` |
+
+---
+
+## ⚡ Asynchronous Kafka Ingestion & Trace Propagation
+
+In addition to direct gRPC dispatching, `webhook-runner` consumes events from Apache Kafka:
+- **Topic `webhook-dispatches`**: High-throughput message queue for background dispatching.
+- **Trace Propagation**: Inherits `request_id` / `trace_id` from Kafka message headers and carries it into outgoing HTTP webhook requests (`X-Request-ID`), ensuring end-to-end APM visibility from caller to destination.
+- **Audit Emission**: Asynchronously emits application mutations and secret rotations to Kafka topic `audit-events`.
 
 ---
 

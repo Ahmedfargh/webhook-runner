@@ -34,6 +34,7 @@ func New(cfg *config.Config) (*App, error) {
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORSMiddleware(cfg.AllowedOrigins))
 	router.Use(middleware.AuditMiddleware(container.AuditEmitter))
+	router.Use(middleware.RequestTrackerMiddleware(container.RequestTrackerEmitter))
 
 	app := &App{
 		cfg:       cfg,
@@ -184,6 +185,14 @@ func (a *App) setupRoutes() {
 			{
 				auditLogs.GET("", a.container.AuditHandler.ListAuditLogs)
 				auditLogs.GET("/:id", a.container.AuditHandler.GetAuditLog)
+			}
+
+			// Request Traces & Telemetry
+			traces := protected.Group("/request-traces")
+			{
+				traces.GET("", a.container.RequestTraceHandler.ListTraces)
+				traces.GET("/stats", a.container.RequestTraceHandler.GetStats)
+				traces.GET("/:id", a.container.RequestTraceHandler.GetTrace)
 			}
 		}
 	}

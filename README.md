@@ -9,12 +9,28 @@ A scalable, production-ready microservices platform for webhook ingestion, role-
 ```mermaid
 graph TB
     Client[Vue 3 SPA - Port 5173] -->|HTTP REST / JWT| Gateway[API Gateway - Port 8080]
-    Gateway -->|gRPC / Protobuf Token Auth| Accounts[Accounts Service - Port 50051]
-    Gateway -->|gRPC / Protobuf Token Auth| Subscriptions[Subscriptions Service - Port 50052]
-    Gateway -->|gRPC / Protobuf Token Auth| Runner[Webhook Runner Service - Port 50053]
+    Gateway -->|gRPC / Token Auth| Accounts[Accounts Service - Port 50051]
+    Gateway -->|gRPC / Token Auth| Subscriptions[Subscriptions Service - Port 50052]
+    Gateway -->|gRPC / Token Auth| Runner[Webhook Runner Service - Port 50053]
+    Gateway -->|gRPC / Token Auth| Audit[Audit Service - Port 50054]
+    Gateway -->|gRPC / Token Auth| Tracker[Request Tracker Service - Port 50055]
+    
+    Gateway -->|Kafka: http-request-traces| Kafka[Apache Kafka :9092]
+    Gateway -->|Kafka: webhook-dispatches| Kafka
+    Gateway -->|Kafka: audit-events| Kafka
+    Accounts -->|Kafka: audit-events| Kafka
+    Subscriptions -->|Kafka: audit-events| Kafka
+    Runner -->|Kafka: audit-events| Kafka
+
+    Kafka -->|Batch Consumer| Tracker
+    Kafka -->|Consumer| Audit
+    Kafka -->|Consumer| Runner
+
     Accounts -->|TCP / GORM Pool| MySQL[(MySQL 8.0 - Port 3307 / 3306)]
     Subscriptions -->|TCP / GORM Pool| MySQL
     Runner -->|TCP / GORM Pool| MySQL
+    Audit -->|TCP / GORM Pool| MySQL
+    Tracker -->|TCP / GORM Pool| MySQL
     Runner -->|HTTP Dispatch + HMAC| Consumers[External Destination Webhooks]
 ```
 
@@ -22,12 +38,15 @@ graph TB
 
 | Service | Protocol / Port | Architecture | Description |
 | :--- | :--- | :--- | :--- |
-| **`api-gateway`** | **HTTP REST / `8080`** | Clean Architecture / Gin | Public REST gateway, JWT auth middleware, inter-service gRPC client routing, and system health checks. |
-| **`webhook-runner`** | **gRPC / `50053`** | HMVC / GORM / Engine | Applications management (`App`), HMAC-SHA256 crypto signing, HTTP dispatch engine, and execution logs telemetry. |
-| **`accounts`** | **gRPC / `50051`** | HMVC / GORM | User & admin identity management, RBAC (roles & granular permissions), multi-lingual countries. |
-| **`subscriptions`** | **gRPC / `50052`** | HMVC / GORM | Tiered pricing plans (Free, Starter, Pro, Enterprise), subscriptions, invoices, and offline payment reviews. |
-| **`frontend`** | **HTTP / `5173`** | Vue 3 + Vite + Nginx | Zoho-inspired responsive UI, 6-language internationalization (AR, EN, FR, DE, RU), App credentials, and Webhook log traces. |
-| **`mysql`** | **TCP / `3307:3306`** | MySQL 8.0 InnoDB | Schemas: `webhook_accounts`, `webhook_subscriptions`, `webhook_runner` with auto-migration and seeders. |
+| **`api-gateway`** | **HTTP REST / `8080`** | Clean Architecture / Gin | Public REST gateway, JWT auth termination, multi-protocol unique request ID generator (`req-<uuid>`), and inter-service gRPC routing. |
+| **`request-tracker-service`** | **gRPC / `50055` + Kafka** | Event-Driven / GORM | Real-time APM telemetry service, batch Kafka consumer (`http-request-traces`), request lifetime calculations, and multi-hop trip waterfalls. |
+| **`audit-service`** | **gRPC / `50054` + Kafka** | Event-Driven / GORM | Immutable audit logging, Kafka consumer (`audit-events`), before/after mutation diffs, actor attribution, and compliance query RPCs. |
+| **`webhook-runner`** | **gRPC / `50053` + Kafka** | HMVC / GORM / Engine | Applications management (`App`), HMAC-SHA256 crypto signing, HTTP dispatch engine, retry lifecycles, and execution telemetry logs. |
+| **`accounts`** | **gRPC / `50051`** | HMVC / GORM | User & admin identity management, RBAC (roles & granular permissions), multi-lingual countries, and audit emitter. |
+| **`subscriptions`** | **gRPC / `50052`** | HMVC / GORM | Tiered pricing plans (Free, Starter, Pro, Enterprise), subscriptions lifecycle, tax-compliant invoicing, and offline bank wire approvals. |
+| **`frontend`** | **HTTP / `5173`** | Vue 3 + Vite + Nginx | Zoho-inspired responsive UI, 6-language internationalization (AR, EN, FR, DE, RU), Request Traces APM inspector, and Audit trails. |
+| **`kafka`** | **TCP / `9092`** | Apache Kafka | Distributed event streaming for `http-request-traces`, `webhook-dispatches`, and `audit-events`. |
+| **`mysql`** | **TCP / `3307:3306`** | MySQL 8.0 InnoDB | Schemas: `webhook_accounts`, `webhook_subscriptions`, `webhook_runner`, `webhook_audit`, `webhook_request_tracker`. |
 
 ---
 
@@ -77,12 +96,15 @@ Ensure you have **Go 1.22+**, **Node.js 20+**, and a running **MySQL** instance.
 | :--- | :--- | :--- |
 | **Frontend UI** | [http://localhost:5173](http://localhost:5173) | Vue 3 Web Application (Default admin: `admin@webhook.io` / `password123`) |
 | **API Gateway REST** | [http://localhost:8080](http://localhost:8080) | Base REST API root (`/api/v1`) |
-| **Gateway Health Probe** | [http://localhost:8080/health](http://localhost:8080/health) | Real-time upstream gRPC connectivity & latency diagnostic (Accounts, Subscriptions, Runner) |
+| **Gateway Health Probe** | [http://localhost:8080/health](http://localhost:8080/health) | Real-time upstream gRPC connectivity & latency diagnostic (all 5 microservices) |
 | **Built-in Mock Webhook Receiver** | [http://localhost:8080/api/v1/webhooks/test-receiver](http://localhost:8080/api/v1/webhooks/test-receiver) | Built-in local mock endpoint for testing HMAC webhook delivery |
-| **Accounts gRPC** | `localhost:50051` | gRPC server reflection enabled (Protobuf v1) |
-| **Subscriptions gRPC** | `localhost:50052` | gRPC server reflection enabled (Protobuf v1) |
-| **Webhook Runner gRPC** | `localhost:50053` | gRPC server reflection enabled (Protobuf v1) |
-| **MySQL Database** | `localhost:3307` | Host mapped port (Databases: `webhook_accounts`, `webhook_subscriptions`, `webhook_runner`) |
+| **Accounts gRPC** | `localhost:50051` | Identity, Auth & RBAC (Protobuf v1 reflection enabled) |
+| **Subscriptions gRPC** | `localhost:50052` | Plans, Billing & Invoicing (Protobuf v1 reflection enabled) |
+| **Webhook Runner gRPC** | `localhost:50053` | Webhook Dispatch Engine & Logs (Protobuf v1 reflection enabled) |
+| **Audit Service gRPC** | `localhost:50054` | Compliance Audit Logs Query & Ingestion (Protobuf v1 reflection enabled) |
+| **Request Tracker gRPC** | `localhost:50055` | Real-time APM Traces, Spans & Latency Percentiles |
+| **Apache Kafka** | `localhost:9092` | Topics: `http-request-traces`, `audit-events`, `webhook-dispatches` |
+| **MySQL Database** | `localhost:3307` | Host mapped port (`webhook_accounts`, `webhook_subscriptions`, `webhook_runner`, `webhook_audit`, `webhook_request_tracker`) |
 
 ---
 
@@ -104,6 +126,41 @@ curl -X POST "http://localhost:8080/api/v1/webhooks/send?app_id=app_live_f4735dd
 
 ### 3. Per-App Webhook Logs Modal
 On the **Applications (`/apps`)** page in the UI, click **`سجلات الويب هوك` (Webhook Logs)** on any application to open live delivery traces, latency statistics, HMAC headers, and expandable payload details.
+
+---
+
+## 🔍 End-to-End APM Request Tracing & Multi-Protocol Trips
+
+The platform includes a dedicated **Application Performance Monitoring (APM)** pipeline that records the lifecycle and multi-hop journey of every incoming HTTP request:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as User / Admin
+    participant GW as API Gateway (:8080)
+    participant Micro as Accounts / Subscriptions / Runner
+    participant Kafka as Apache Kafka
+    participant Tracker as Request Tracker Service (:50055)
+    participant DB as MySQL (webhook_request_tracker)
+
+    Client->>GW: REST HTTP Request (POST /api/v1/...)
+    Note over GW: 1. Generate/Extract X-Request-ID (req-<uuid>)<br/>2. Start microsecond timer<br/>3. Initialize SpanCollector
+    GW->>Micro: gRPC Call (Metadata: x-request-id, x-trace-id)
+    Micro-->>GW: gRPC Response (Record gRPC Hop Span)
+    opt When Event Dispatched
+        GW-)Kafka: Produce to webhook-dispatches / audit-events (Headers: request_id)
+    end
+    Note over GW: 4. Intercept response status & body<br/>5. Calculate total lifetime_ms<br/>6. Serialize spans_json
+    GW-->>Client: REST HTTP Response (Headers: X-Request-ID, X-Trace-ID)
+    GW-)Kafka: Async Emit TracePayload to http-request-traces (Zero latency overhead)
+    Kafka-)Tracker: Batch Consumer processes traces
+    Tracker->>DB: Bulk insert into `request_traces`
+```
+
+### Key Tracking Capabilities:
+- **Unique Distributed ID**: `X-Request-ID` is assigned at gateway ingress and propagated across REST response headers, gRPC metadata (`x-request-id`), and Kafka message headers (`request_id`).
+- **Complete Journey Waterfall**: Visualized in the Vue 3 Frontend (`/request-traces`) showing exact time spent in Gateway Ingress $\rightarrow$ Downstream gRPC calls $\rightarrow$ Kafka event dispatches $\rightarrow$ Gateway Egress.
+- **Payload Sanitization**: Incoming request bodies and outgoing responses are captured with passwords, tokens, and secrets automatically masked.
 
 ---
 
